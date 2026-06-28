@@ -185,7 +185,7 @@ export function MeshPanel({ data, loading }: { data: MeshData | null; loading: b
                         y={n.y - 16}
                         textAnchor="middle"
                         fill={isHovered ? ghostColors[i] : "var(--text-ghost)"}
-                        style={{ fontSize: 7.5, fontFamily: "var(--font-mono)", tracking: "0.15em", transition: "color 300ms" }}
+                        style={{ fontSize: 7.5, fontFamily: "var(--font-mono)", letterSpacing: "0.15em", transition: "color 300ms" }}
                       >
                         {n.label.toUpperCase()}
                       </text>
