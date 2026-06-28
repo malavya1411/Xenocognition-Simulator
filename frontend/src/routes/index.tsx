@@ -18,7 +18,6 @@ import {
 } from "@/components/xeno/Atmosphere";
 import { NeuralCore } from "@/components/xeno/LandingCanvas";
 import { AuthPanel } from "@/components/xeno/AuthPanel";
-import { OnboardingWizard } from "@/components/xeno/OnboardingWizard";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,8 +37,11 @@ function LandingPage() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   
-  // Landing Page Sub-Views: "hero" | "login" | "signup" | "onboarding"
-  const [view, setView] = useState<"hero" | "login" | "signup" | "onboarding">("hero");
+  // Landing Page Sub-Views: "hero" | "login" | "signup"
+  const [view, setView] = useState<"hero" | "login" | "signup">("hero");
+
+  // Track login state transitions to trigger automatic redirect
+  const [prevUserUid, setPrevUserUid] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -48,32 +50,26 @@ function LandingPage() {
     }
   }, [theme]);
 
-  // Handle Auth transitions and onboarding detection
+  // Handle Auth transitions and dashboard redirection on login
   useEffect(() => {
     if (!loading) {
       if (user) {
-        if (profile) {
-          if (!profile.onboardingCompleted) {
-            setView("onboarding");
-          } else {
-            setView("hero");
+        if (prevUserUid === null) {
+          if (profile) {
+            navigate({ to: "/dashboard" });
           }
         }
+        setPrevUserUid(user.uid);
       } else {
+        setPrevUserUid(null);
         setView("hero");
       }
     }
-  }, [user, profile, loading]);
+  }, [user, profile, loading, prevUserUid, navigate]);
 
   const handleAuthSuccess = () => {
-    // If the user object is updated, the useEffect above will redirect them
-    // to dashboard or onboarding. If they are already logged in (e.g. email auth), we trigger here
     if (user && profile) {
-      if (profile.onboardingCompleted) {
-        navigate({ to: "/dashboard" });
-      } else {
-        setView("onboarding");
-      }
+      navigate({ to: "/dashboard" });
     }
   };
 
@@ -161,8 +157,8 @@ function LandingPage() {
               </p>
 
               <div className="mt-10 flex flex-wrap justify-center gap-4">
-                {user && profile?.onboardingCompleted ? (
-                  /* User is authenticated & onboarding complete */
+                {user && profile ? (
+                  /* User is authenticated */
                   <div className="flex flex-col items-center gap-4">
                     <p className="font-mono text-[11px] uppercase tracking-widest text-text-secondary">
                       Neural interface active: <span className="text-white font-bold">{profile.displayName}</span>
@@ -221,16 +217,6 @@ function LandingPage() {
                 mode="signup" 
                 onCancel={() => setView("hero")} 
                 onSuccess={handleAuthSuccess} 
-              />
-            </motion.div>
-          )}
-
-          {view === "onboarding" && (
-            <motion.div key="onboarding-view" className="w-full">
-              <OnboardingWizard 
-                isOpen={true} 
-                onComplete={() => navigate({ to: "/dashboard" })} 
-                onCancel={handleLogout} 
               />
             </motion.div>
           )}

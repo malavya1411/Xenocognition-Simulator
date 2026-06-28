@@ -7,8 +7,7 @@ import {
 import { 
   doc, 
   getDoc, 
-  setDoc, 
-  updateDoc 
+  setDoc
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
@@ -17,10 +16,6 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  onboardingCompleted: boolean;
-  researchFocus?: string;
-  curiosityDomain?: string;
-  preferredPersona?: string;
   createdAt?: string;
 }
 
@@ -28,12 +23,6 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
-  completeOnboarding: (data: {
-    displayName: string;
-    researchFocus: string;
-    curiosityDomain: string;
-    preferredPersona: string;
-  }) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -53,20 +42,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (docSnap.exists()) {
         setProfile(docSnap.data() as UserProfile);
       } else {
-        // Create initial profile for new user
+        // Create initial profile for new user in Firestore
         const initialProfile: UserProfile = {
           uid: uid,
           email: currentUser.email,
           displayName: currentUser.displayName || (currentUser.email ? currentUser.email.split("@")[0] : "Xeno Researcher"),
           photoURL: currentUser.photoURL,
-          onboardingCompleted: false,
           createdAt: new Date().toISOString()
         };
         await setDoc(docRef, initialProfile);
         setProfile(initialProfile);
       }
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      console.warn("Firestore fetch failed (likely missing rules/permissions). Falling back to memory-only profile:", error);
+      // Resilient Fallback: construct in-memory profile so user is not blocked
+      const fallbackProfile: UserProfile = {
+        uid: uid,
+        email: currentUser.email,
+        displayName: currentUser.displayName || (currentUser.email ? currentUser.email.split("@")[0] : "Xeno Researcher"),
+        photoURL: currentUser.photoURL,
+        createdAt: new Date().toISOString()
+      };
+      setProfile(fallbackProfile);
     }
   };
 
@@ -90,32 +87,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const completeOnboarding = async (data: {
-    displayName: string;
-    researchFocus: string;
-    curiosityDomain: string;
-    preferredPersona: string;
-  }) => {
-    if (!user) throw new Error("No authenticated user found.");
-    
-    const docRef = doc(db, "users", user.uid);
-    const updatedData = {
-      ...data,
-      onboardingCompleted: true,
-      updatedAt: new Date().toISOString()
-    };
-
-    await updateDoc(docRef, updatedData);
-    
-    setProfile(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        ...updatedData
-      };
-    });
-  };
-
   const logout = async () => {
     setLoading(true);
     await fbSignOut(auth);
@@ -125,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, completeOnboarding, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
