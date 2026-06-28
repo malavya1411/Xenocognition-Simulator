@@ -42,6 +42,7 @@ import {
   Vignette,
 } from "@/components/xeno/Atmosphere";
 import { ProcessingOverlay } from "@/components/xeno/ProcessingOverlay";
+import { OctopusChatRealm } from "@/components/xeno/OctopusChatRealm";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardComponent,
@@ -80,6 +81,7 @@ function DashboardComponent() {
   const [input, setInput] = useState("");
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [showOctopusRealm, setShowOctopusRealm] = useState(false);
 
   const [archs, setArchs] = useState<Record<ArchId, ArchState>>({
     octopus: { status: "idle", data: null },
@@ -118,8 +120,14 @@ function DashboardComponent() {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    runSimulation(input.trim());
+    const query = input.trim();
+    if (!query) return;
+
+    if (activeTab === "octopus") {
+      setShowOctopusRealm(true);
+    } else {
+      runSimulation(query);
+    }
   };
 
   const handleLogout = async () => {
@@ -330,6 +338,14 @@ function DashboardComponent() {
                           <span className="text-text-secondary">{activeTab === "mesh" ? "Silicon Mesh" : activeTab === "boltzmann" ? "Quantum Noise" : "Organic Loom"}</span>
                         </div>
                       </div>
+                      {activeTab === "octopus" && (
+                        <button
+                          onClick={() => setShowOctopusRealm(true)}
+                          className="w-full mt-4 flex items-center justify-center gap-2 rounded border border-[#00FFE5]/30 hover:border-[#00FFE5] bg-[#00FFE5]/5 hover:bg-[#00FFE5]/15 py-2 text-[10px] font-mono tracking-widest text-[#00FFE5] transition-all cursor-pointer uppercase font-bold"
+                        >
+                          🐙 INITIATE UPLINK REALM
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -458,6 +474,16 @@ function DashboardComponent() {
       <AnimatePresence>
         {showProcessing && <ProcessingOverlay doneCount={doneCount} />}
       </AnimatePresence>
+
+      {showOctopusRealm && (
+        <OctopusChatRealm
+          initialConcept={input.trim() || submitted || "xenocognition"}
+          onClose={() => {
+            setShowOctopusRealm(false);
+            setInput("");
+          }}
+        />
+      )}
 
     </div>
   );
