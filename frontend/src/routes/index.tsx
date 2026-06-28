@@ -399,6 +399,7 @@ function XenoApp() {
               onChange={(e) => setInput(e.target.value)}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
+              spellCheck="false"
               placeholder={placeholders[placeholderIndex]}
               aria-label="Cognitive input"
               className="h-full w-full bg-transparent px-6 font-sans text-[15px] text-text-primary outline-none placeholder:text-text-ghost placeholder:italic placeholder:transition-opacity placeholder:duration-300"
