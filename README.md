@@ -4,6 +4,8 @@ Intelligence is architectural, not universal.
 
 The **Xenocognition Simulator** is a full-stack, speculative application that processes human concepts through five modeled alien and non-human cognitive frameworks. It functions as a "cognitive empathy machine," exploring how different physical architectures, substrate speeds, social aggregations, and thermodynamic properties reshape meaning.
 
+📄 **[Full Prompt Architecture Specifications →](docs/prompt-architectures.md)**
+
 ---
 
 ## 🌌 The 5 Cognitive Architectures
