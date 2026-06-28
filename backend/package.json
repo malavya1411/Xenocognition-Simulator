@@ -1,0 +1,14 @@
+{
+  "name": "xenocognition-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@tanstack/react-start": "^1.168.26"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
