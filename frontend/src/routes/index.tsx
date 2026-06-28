@@ -7,6 +7,8 @@ import {
   Sun, 
   ChevronRight, 
   Sparkles, 
+  LogOut, 
+  LayoutDashboard
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -57,15 +59,18 @@ const ARCH_META: {
 ];
 
 function LandingPage() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, logout } = useAuth();
   const navigate = useNavigate();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   
-  // Modal toggles
+  // Modal states
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authInitialTab, setAuthInitialTab] = useState<"login" | "signup">("login");
   const [isOnboarding, setIsOnboarding] = useState(false);
   const [hoveredArch, setHoveredArch] = useState<ArchId | null>(null);
+
+  // Track user login transition to avoid auto-redirect loops
+  const [prevUserUid, setPrevUserUid] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -74,22 +79,35 @@ function LandingPage() {
     }
   }, [theme]);
 
-  // Route guarding and redirect logic
+  // Auth monitoring and onboarding trigger
   useEffect(() => {
-    if (!loading && user) {
-      if (profile) {
-        if (profile.onboardingCompleted) {
-          navigate({ to: "/dashboard" });
-        } else {
-          setIsOnboarding(true);
+    if (!loading) {
+      if (user) {
+        // If they just logged in (transitioned from logged out)
+        if (prevUserUid === null) {
+          if (profile) {
+            if (profile.onboardingCompleted) {
+              navigate({ to: "/dashboard" });
+            } else {
+              setIsOnboarding(true);
+            }
+          }
         }
+        setPrevUserUid(user.uid);
+      } else {
+        setPrevUserUid(null);
+        setIsOnboarding(false);
       }
     }
-  }, [user, profile, loading, navigate]);
+  }, [user, profile, loading, prevUserUid, navigate]);
 
   const handleStartConnection = () => {
     if (user) {
-      setIsOnboarding(true);
+      if (profile?.onboardingCompleted) {
+        navigate({ to: "/dashboard" });
+      } else {
+        setIsOnboarding(true);
+      }
     } else {
       setAuthInitialTab("signup");
       setShowAuthModal(true);
@@ -102,6 +120,14 @@ function LandingPage() {
     } else {
       setAuthInitialTab("login");
       setShowAuthModal(true);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error("Failed to logout:", err);
     }
   };
 
@@ -148,20 +174,49 @@ function LandingPage() {
           <button
             onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
             aria-label="Toggle theme"
-            className="grid h-9 w-9 place-items-center text-text-secondary transition-colors hover:bg-elevated hover:text-text-primary rounded border border-border-dim"
+            className="grid h-9 w-9 place-items-center text-text-secondary transition-colors hover:bg-elevated hover:text-text-primary rounded border border-border-dim cursor-pointer"
           >
             {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
           </button>
-          {!user && (
-            <button
-              onClick={() => {
-                setAuthInitialTab("login");
-                setShowAuthModal(true);
-              }}
-              className="rounded bg-text-primary px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-base hover:bg-white transition-all shadow-lg cursor-pointer"
-            >
-              Uplink
-            </button>
+          
+          {user && profile?.onboardingCompleted ? (
+            /* Logged In, Onboarding completed: dashboard link + logout button */
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate({ to: "/dashboard" })}
+                className="flex items-center gap-1.5 rounded border border-border-glow bg-elevated px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-primary hover:bg-white hover:text-black transition-all cursor-pointer"
+              >
+                <LayoutDashboard size={12} /> Dashboard
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 rounded border border-border-dim px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary hover:text-text-primary hover:border-border-glow transition-all cursor-pointer"
+              >
+                <LogOut size={12} /> Log Out
+              </button>
+            </div>
+          ) : (
+            /* Logged Out / Incomplete: sign-in + login links */
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setAuthInitialTab("login");
+                  setShowAuthModal(true);
+                }}
+                className="rounded border border-border-dim px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary hover:text-text-primary hover:border-border-glow transition-all cursor-pointer"
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => {
+                  setAuthInitialTab("signup");
+                  setShowAuthModal(true);
+                }}
+                className="rounded bg-text-primary px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-base hover:bg-white transition-all shadow-lg cursor-pointer"
+              >
+                Sign In
+              </button>
+            </div>
           )}
         </div>
       </nav>
@@ -198,9 +253,9 @@ function LandingPage() {
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <button
                 onClick={handleStartConnection}
-                className="group flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-semibold uppercase tracking-wider text-black transition-all hover:scale-105 hover:bg-neutral-200 cursor-pointer"
+                className="group flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-semibold uppercase tracking-wider text-black transition-all hover:scale-105 hover:bg-neutral-200 cursor-pointer shadow-lg"
               >
-                Access Neural Uplink
+                {user && profile?.onboardingCompleted ? "Enter Dashboard" : "Access Neural Uplink"}
                 <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
               </button>
               <a
@@ -297,6 +352,9 @@ function LandingPage() {
             onComplete={() => {
               setIsOnboarding(false);
               navigate({ to: "/dashboard" });
+            }}
+            onCancel={() => {
+              setIsOnboarding(false);
             }}
           />
         )}

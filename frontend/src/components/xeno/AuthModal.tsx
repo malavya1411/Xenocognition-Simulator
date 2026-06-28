@@ -17,6 +17,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
   const [name, setName] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [formLoading, setFormLoading] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
   if (!isOpen) return null;
 
@@ -95,10 +96,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
         </button>
 
         <h3 className="font-sans text-xl font-bold uppercase tracking-wide text-text-primary text-center">
-          Sync Interface
+          {authTab === "login" ? "Welcome Back" : "Establish Identity"}
         </h3>
         <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-text-secondary text-center">
-          Initialize Secure Uplink
+          {authTab === "login" ? "Connect & Synchronize" : "Create Neural Profile"}
         </p>
 
         {errorMsg && (
@@ -107,87 +108,150 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTa
           </div>
         )}
 
+        {/* Tab Selection */}
         <div className="mt-6 flex border-b border-border-dim">
           <button
-            onClick={() => { setAuthTab("login"); setErrorMsg(""); }}
+            onClick={() => { setAuthTab("login"); setErrorMsg(""); setShowEmailForm(false); }}
             className={`flex-1 pb-3 text-xs font-semibold uppercase tracking-wider transition-colors ${authTab === "login" ? "text-text-primary border-b-2 border-text-primary" : "text-text-ghost hover:text-text-secondary"}`}
+          >
+            Log In
+          </button>
+          <button
+            onClick={() => { setAuthTab("signup"); setErrorMsg(""); setShowEmailForm(false); }}
+            className={`flex-1 pb-3 text-xs font-semibold uppercase tracking-wider transition-colors ${authTab === "signup" ? "text-text-primary border-b-2 border-text-primary" : "text-text-ghost hover:text-text-secondary"}`}
           >
             Sign In
           </button>
-          <button
-            onClick={() => { setAuthTab("signup"); setErrorMsg(""); }}
-            className={`flex-1 pb-3 text-xs font-semibold uppercase tracking-wider transition-colors ${authTab === "signup" ? "text-text-primary border-b-2 border-text-primary" : "text-text-ghost hover:text-text-secondary"}`}
-          >
-            Create Account
-          </button>
         </div>
 
-        <div className="mt-6">
-          <button
-            onClick={handleGoogleLogin}
-            disabled={formLoading}
-            className="flex w-full items-center justify-center gap-3 rounded bg-white px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-lg disabled:opacity-50"
-          >
-            <Chrome size={14} />
-            Connect with Google
-          </button>
-        </div>
+        {/* GOOGLE INTEGRATION */}
+        {authTab === "login" ? (
+          /* LOGIN MODE: Connect Google Account Only */
+          <div className="mt-8 space-y-6 text-center">
+            <p className="text-xs text-text-secondary leading-relaxed">
+              Connect your Google Account to automatically authorize your workspace and access the simulation dashboard.
+            </p>
+            <button
+              onClick={handleGoogleLogin}
+              disabled={formLoading}
+              className="flex w-full items-center justify-center gap-3 rounded bg-white px-4 py-3 text-xs font-semibold uppercase tracking-wider text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-lg disabled:opacity-50"
+            >
+              <Chrome size={14} />
+              Connect Google Account
+            </button>
 
-        <div className="relative mt-6 flex items-center justify-center">
-          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border-dim"></div></div>
-          <span className="relative bg-[#08080f] px-3 font-mono text-[9px] uppercase tracking-widest text-text-ghost">or</span>
-        </div>
+            {!showEmailForm ? (
+              <button
+                onClick={() => setShowEmailForm(true)}
+                className="mt-4 font-mono text-[9px] uppercase tracking-widest text-text-ghost hover:text-text-secondary transition-colors underline cursor-pointer"
+              >
+                Use email credentials instead
+              </button>
+            ) : (
+              <div className="text-left border-t border-border-dim pt-4 mt-4">
+                <form onSubmit={handleEmailAuth} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="font-mono text-[9px] uppercase tracking-widest text-text-secondary flex items-center gap-1.5">
+                      <Mail size={10} /> Email
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="researcher@xenolab.edu"
+                      className="w-full rounded border border-border-dim bg-void/50 px-3 py-2 text-xs text-text-primary outline-none focus:border-border-glow transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="font-mono text-[9px] uppercase tracking-widest text-text-secondary flex items-center gap-1.5">
+                      <Lock size={10} /> Password
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full rounded border border-border-dim bg-void/50 px-3 py-2 text-xs text-text-primary outline-none focus:border-border-glow transition-all"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={formLoading}
+                    className="flex w-full items-center justify-center rounded border border-border-glow bg-elevated py-2 text-xs font-bold uppercase tracking-wider text-text-primary hover:bg-white hover:text-black transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {formLoading ? "Authorizing..." : "Initialize Interface"}
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* SIGN IN (SIGN UP) MODE: Full credentials or Google signup */
+          <div className="mt-6">
+            <button
+              onClick={handleGoogleLogin}
+              disabled={formLoading}
+              className="flex w-full items-center justify-center gap-3 rounded bg-white px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-lg disabled:opacity-50"
+            >
+              <Chrome size={14} />
+              Sign In with Google
+            </button>
 
-        <form onSubmit={handleEmailAuth} className="mt-6 space-y-4">
-          {authTab === "signup" && (
-            <div className="space-y-1.5">
-              <label className="font-mono text-[9px] uppercase tracking-widest text-text-secondary flex items-center gap-1.5">
-                <User size={10} /> Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Dr. Vance"
-                className="w-full rounded border border-border-dim bg-void/50 px-3 py-2 text-xs text-text-primary outline-none focus:border-border-glow transition-all"
-              />
+            <div className="relative mt-6 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border-dim"></div></div>
+              <span className="relative bg-[#08080f] px-3 font-mono text-[9px] uppercase tracking-widest text-text-ghost">or</span>
             </div>
-          )}
-          
-          <div className="space-y-1.5">
-            <label className="font-mono text-[9px] uppercase tracking-widest text-text-secondary flex items-center gap-1.5">
-              <Mail size={10} /> Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="researcher@xenolab.edu"
-              className="w-full rounded border border-border-dim bg-void/50 px-3 py-2 text-xs text-text-primary outline-none focus:border-border-glow transition-all"
-            />
-          </div>
 
-          <div className="space-y-1.5">
-            <label className="font-mono text-[9px] uppercase tracking-widest text-text-secondary flex items-center gap-1.5">
-              <Lock size={10} /> Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full rounded border border-border-dim bg-void/50 px-3 py-2 text-xs text-text-primary outline-none focus:border-border-glow transition-all"
-            />
-          </div>
+            <form onSubmit={handleEmailAuth} className="mt-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="font-mono text-[9px] uppercase tracking-widest text-text-secondary flex items-center gap-1.5">
+                  <User size={10} /> Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Dr. Vance"
+                  className="w-full rounded border border-border-dim bg-void/50 px-3 py-2 text-xs text-text-primary outline-none focus:border-border-glow transition-all"
+                />
+              </div>
+              
+              <div className="space-y-1.5">
+                <label className="font-mono text-[9px] uppercase tracking-widest text-text-secondary flex items-center gap-1.5">
+                  <Mail size={10} /> Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="researcher@xenolab.edu"
+                  className="w-full rounded border border-border-dim bg-void/50 px-3 py-2 text-xs text-text-primary outline-none focus:border-border-glow transition-all"
+                />
+              </div>
 
-          <button
-            type="submit"
-            disabled={formLoading}
-            className="mt-6 flex w-full items-center justify-center gap-1.5 rounded border border-border-glow bg-elevated py-2.5 text-xs font-bold uppercase tracking-wider text-text-primary hover:bg-white hover:text-black transition-all cursor-pointer disabled:opacity-50"
-          >
-            {formLoading ? "Authorizing..." : authTab === "login" ? "Initialize Interface" : "Deploy Credentials"}
-          </button>
-        </form>
+              <div className="space-y-1.5">
+                <label className="font-mono text-[9px] uppercase tracking-widest text-text-secondary flex items-center gap-1.5">
+                  <Lock size={10} /> Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded border border-border-dim bg-void/50 px-3 py-2 text-xs text-text-primary outline-none focus:border-border-glow transition-all"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={formLoading}
+                className="mt-6 flex w-full items-center justify-center gap-1.5 rounded border border-border-glow bg-elevated py-2.5 text-xs font-bold uppercase tracking-wider text-text-primary hover:bg-white hover:text-black transition-all cursor-pointer disabled:opacity-50"
+              >
+                {formLoading ? "Deploying..." : "Create Neural Profile"}
+              </button>
+            </form>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );

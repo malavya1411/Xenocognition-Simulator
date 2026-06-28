@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { User, Compass, Cpu, ChevronRight } from "lucide-react";
+import { User, Compass, Cpu, ChevronRight, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import {
   BoltzmannIcon,
@@ -13,6 +13,7 @@ import {
 interface OnboardingWizardProps {
   isOpen: boolean;
   onComplete: () => void;
+  onCancel: () => void;
 }
 
 type ArchId = "octopus" | "mycelium" | "hive" | "boltzmann" | "mesh";
@@ -29,16 +30,29 @@ const ONBOARD_ARCH_META: {
   { id: "mesh", name: "Mesh", icon: MeshIcon },
 ];
 
-export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onComplete }) => {
-  const { completeOnboarding } = useAuth();
+export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onComplete, onCancel }) => {
+  const { completeOnboarding, logout } = useAuth();
   const [onboardStep, setOnboardStep] = useState(1);
   const [onboardName, setOnboardName] = useState("");
   const [onboardFocus, setOnboardFocus] = useState("");
   const [onboardCuriosity, setOnboardCuriosity] = useState("");
   const [onboardPersona, setOnboardPersona] = useState<ArchId>("octopus");
   const [neuralLoadingText, setNeuralLoadingText] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleCancelOnboarding = async () => {
+    setCancelling(true);
+    try {
+      await logout();
+      onCancel();
+    } catch (err) {
+      console.error("Error logging out during onboarding cancel:", err);
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   const submitOnboarding = async () => {
     if (!onboardName.trim() || !onboardFocus || !onboardCuriosity || !onboardPersona) {
@@ -85,8 +99,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
         animate={{ scale: 1, y: 0 }}
         className="premium-glass relative w-full max-w-xl overflow-hidden rounded-2xl p-10 bg-surface/90 border border-border-glow shadow-2xl"
       >
+        {/* Back to Landing Page option available on every screen */}
+        {onboardStep < 4 && (
+          <button
+            onClick={handleCancelOnboarding}
+            disabled={cancelling}
+            className="absolute top-4 left-6 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-text-ghost hover:text-text-primary transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <ArrowLeft size={10} /> Go back to landing page
+          </button>
+        )}
+
         {/* Progress Indicator */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 mt-4">
           <span className="font-mono text-[9px] uppercase tracking-widest text-text-secondary">
             Onboarding Phase {onboardStep} of 4
           </span>
@@ -133,7 +158,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
             <div className="flex justify-end pt-4">
               <button
                 onClick={() => onboardName.trim() && setOnboardStep(2)}
-                disabled={!onboardName.trim()}
+                disabled={!onboardName.trim() || cancelling}
                 className="flex items-center gap-1.5 rounded-full bg-white px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-black hover:bg-neutral-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
               >
                 Next Step <ChevronRight size={14} />
@@ -184,13 +209,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
             <div className="flex justify-between pt-4">
               <button
                 onClick={() => setOnboardStep(1)}
+                disabled={cancelling}
                 className="rounded-full border border-border-dim bg-surface/30 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-all cursor-pointer"
               >
                 Back
               </button>
               <button
                 onClick={() => onboardFocus && setOnboardStep(3)}
-                disabled={!onboardFocus}
+                disabled={!onboardFocus || cancelling}
                 className="flex items-center gap-1.5 rounded-full bg-white px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-black hover:bg-neutral-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
               >
                 Next Step <ChevronRight size={14} />
@@ -261,13 +287,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
             <div className="flex justify-between pt-4">
               <button
                 onClick={() => setOnboardStep(2)}
+                disabled={cancelling}
                 className="rounded-full border border-border-dim bg-surface/30 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary hover:text-text-primary transition-all cursor-pointer"
               >
                 Back
               </button>
               <button
                 onClick={submitOnboarding}
-                disabled={!onboardCuriosity || !onboardPersona}
+                disabled={!onboardCuriosity || !onboardPersona || cancelling}
                 className="flex items-center gap-1.5 rounded-full bg-white px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-black hover:bg-neutral-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
               >
                 Establish Connection <ChevronRight size={14} />
