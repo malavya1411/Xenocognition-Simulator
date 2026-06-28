@@ -53,19 +53,13 @@ function LandingPage() {
   // Handle Auth transitions and dashboard redirection on login
   useEffect(() => {
     if (!loading) {
-      if (user) {
-        if (prevUserUid === null) {
-          if (profile) {
-            navigate({ to: "/dashboard" });
-          }
+      if (user && profile) {
+        if (view === "login" || view === "signup") {
+          navigate({ to: "/dashboard" });
         }
-        setPrevUserUid(user.uid);
-      } else {
-        setPrevUserUid(null);
-        setView("hero");
       }
     }
-  }, [user, profile, loading, prevUserUid, navigate]);
+  }, [user, profile, loading, view, navigate]);
 
   const handleAuthSuccess = () => {
     if (user && profile) {
