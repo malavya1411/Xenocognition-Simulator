@@ -7,8 +7,7 @@ import {
 import { 
   doc, 
   getDoc, 
-  setDoc, 
-  updateDoc 
+  setDoc
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
@@ -17,10 +16,7 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  onboardingCompleted: boolean;
-  researchFocus?: string;
-  curiosityDomain?: string;
-  preferredPersona?: string;
+  password?: string;
   createdAt?: string;
 }
 
@@ -28,14 +24,13 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
-  completeOnboarding: (data: {
-    displayName: string;
-    researchFocus: string;
-    curiosityDomain: string;
-    preferredPersona: string;
-  }) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  saveProfile: (profileData: {
+    displayName: string;
+    email: string;
+    password?: string;
+  }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,20 +48,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (docSnap.exists()) {
         setProfile(docSnap.data() as UserProfile);
       } else {
-        // Create initial profile for new user
-        const initialProfile: UserProfile = {
-          uid: uid,
-          email: currentUser.email,
-          displayName: currentUser.displayName || (currentUser.email ? currentUser.email.split("@")[0] : "Xeno Researcher"),
-          photoURL: currentUser.photoURL,
-          onboardingCompleted: false,
-          createdAt: new Date().toISOString()
-        };
-        await setDoc(docRef, initialProfile);
-        setProfile(initialProfile);
+        // Stop here! Do not automatically create the profile.
+        // Set profile to null so the frontend knows to prompt for details.
+        setProfile(null);
       }
     } catch (error) {
-      console.error("Error fetching user profile:", error);
+      console.warn("Firestore fetch failed (likely missing rules/permissions). Setting profile to null to trigger setup form:", error);
+      setProfile(null);
     }
   };
 
@@ -74,6 +62,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) {
       await fetchProfile(user.uid, user);
     }
+  };
+
+  const saveProfile = async (profileData: {
+    displayName: string;
+    email: string;
+    password?: string;
+  }) => {
+    if (!user) throw new Error("No authenticated user found.");
+    
+    const docRef = doc(db, "users", user.uid);
+    const newProfile: UserProfile = {
+      uid: user.uid,
+      email: profileData.email,
+      displayName: profileData.displayName,
+      photoURL: user.photoURL,
+      password: profileData.password || "", // Save password if provided
+      createdAt: new Date().toISOString()
+    };
+
+    // Run setDoc in the background without awaiting it.
+    // This prevents the UI from getting stuck if the network hangs or rules are locked.
+    setDoc(docRef, newProfile).catch((error) => {
+      console.warn("Firestore background write failed (likely missing rules/permissions):", error);
+    });
+    
+    // Set profile state immediately to trigger dashboard redirection
+    setProfile(newProfile);
   };
 
   useEffect(() => {
@@ -90,32 +105,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const completeOnboarding = async (data: {
-    displayName: string;
-    researchFocus: string;
-    curiosityDomain: string;
-    preferredPersona: string;
-  }) => {
-    if (!user) throw new Error("No authenticated user found.");
-    
-    const docRef = doc(db, "users", user.uid);
-    const updatedData = {
-      ...data,
-      onboardingCompleted: true,
-      updatedAt: new Date().toISOString()
-    };
-
-    await updateDoc(docRef, updatedData);
-    
-    setProfile(prev => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        ...updatedData
-      };
-    });
-  };
-
   const logout = async () => {
     setLoading(true);
     await fbSignOut(auth);
@@ -125,7 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, completeOnboarding, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile, saveProfile }}>
       {children}
     </AuthContext.Provider>
   );
