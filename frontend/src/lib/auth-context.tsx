@@ -16,6 +16,7 @@ export interface UserProfile {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  password?: string;
   createdAt?: string;
 }
 
@@ -25,6 +26,11 @@ interface AuthContextType {
   loading: boolean;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  saveProfile: (profileData: {
+    displayName: string;
+    email: string;
+    password?: string;
+  }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,28 +48,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (docSnap.exists()) {
         setProfile(docSnap.data() as UserProfile);
       } else {
-        // Create initial profile for new user in Firestore
-        const initialProfile: UserProfile = {
-          uid: uid,
-          email: currentUser.email,
-          displayName: currentUser.displayName || (currentUser.email ? currentUser.email.split("@")[0] : "Xeno Researcher"),
-          photoURL: currentUser.photoURL,
-          createdAt: new Date().toISOString()
-        };
-        await setDoc(docRef, initialProfile);
-        setProfile(initialProfile);
+        // Stop here! Do not automatically create the profile.
+        // Set profile to null so the frontend knows to prompt for details.
+        setProfile(null);
       }
     } catch (error) {
-      console.warn("Firestore fetch failed (likely missing rules/permissions). Falling back to memory-only profile:", error);
-      // Resilient Fallback: construct in-memory profile so user is not blocked
-      const fallbackProfile: UserProfile = {
-        uid: uid,
-        email: currentUser.email,
-        displayName: currentUser.displayName || (currentUser.email ? currentUser.email.split("@")[0] : "Xeno Researcher"),
-        photoURL: currentUser.photoURL,
-        createdAt: new Date().toISOString()
-      };
-      setProfile(fallbackProfile);
+      console.warn("Firestore fetch failed (likely missing rules/permissions). Setting profile to null to trigger setup form:", error);
+      setProfile(null);
     }
   };
 
@@ -71,6 +62,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) {
       await fetchProfile(user.uid, user);
     }
+  };
+
+  const saveProfile = async (profileData: {
+    displayName: string;
+    email: string;
+    password?: string;
+  }) => {
+    if (!user) throw new Error("No authenticated user found.");
+    
+    const docRef = doc(db, "users", user.uid);
+    const newProfile: UserProfile = {
+      uid: user.uid,
+      email: profileData.email,
+      displayName: profileData.displayName,
+      photoURL: user.photoURL,
+      password: profileData.password || "", // Save password if provided
+      createdAt: new Date().toISOString()
+    };
+
+    // Run setDoc in the background without awaiting it.
+    // This prevents the UI from getting stuck if the network hangs or rules are locked.
+    setDoc(docRef, newProfile).catch((error) => {
+      console.warn("Firestore background write failed (likely missing rules/permissions):", error);
+    });
+    
+    // Set profile state immediately to trigger dashboard redirection
+    setProfile(newProfile);
   };
 
   useEffect(() => {
@@ -96,7 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile, saveProfile }}>
       {children}
     </AuthContext.Provider>
   );
