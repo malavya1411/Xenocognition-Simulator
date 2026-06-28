@@ -62,9 +62,7 @@ function LandingPage() {
   }, [user, profile, loading, view, navigate]);
 
   const handleAuthSuccess = () => {
-    if (user && profile) {
-      navigate({ to: "/dashboard" });
-    }
+    navigate({ to: "/dashboard" });
   };
 
   const handleLogout = async () => {

@@ -17,7 +17,8 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ mode, onCancel, onSuccess 
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  const [formLoading, setFormLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   // Prefill fields when user becomes authenticated but profile is missing
   useEffect(() => {
@@ -29,7 +30,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ mode, onCancel, onSuccess 
 
   const handleGoogleLogin = async () => {
     setErrorMsg("");
-    setFormLoading(true);
+    setGoogleLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
       // Wait for auth context to update user/profile. 
@@ -37,7 +38,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ mode, onCancel, onSuccess 
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || "Failed to connect Google account.");
-      setFormLoading(false);
+      setGoogleLoading(false);
     }
   };
 
@@ -48,7 +49,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ mode, onCancel, onSuccess 
       setErrorMsg("Username and Email are required.");
       return;
     }
-    setFormLoading(true);
+    setProfileLoading(true);
     try {
       await saveProfile({
         displayName: username.trim(),
@@ -59,20 +60,18 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ mode, onCancel, onSuccess 
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || "Failed to create profile in Firestore.");
-    } finally {
-      setFormLoading(false);
+      setProfileLoading(false);
     }
   };
 
   const handleCancelAndLogout = async () => {
-    setFormLoading(true);
+    setGoogleLoading(true);
     try {
       await logout();
       onCancel();
     } catch (err) {
       console.error(err);
-    } finally {
-      setFormLoading(false);
+      setGoogleLoading(false);
     }
   };
 
@@ -88,7 +87,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ mode, onCancel, onSuccess 
       >
         <button
           onClick={handleCancelAndLogout}
-          disabled={formLoading}
+          disabled={googleLoading || profileLoading}
           className="absolute top-4 left-6 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-text-ghost hover:text-text-primary transition-colors cursor-pointer disabled:opacity-50"
         >
           <ArrowLeft size={10} /> Cancel Registration
@@ -153,10 +152,10 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ mode, onCancel, onSuccess 
 
           <button
             type="submit"
-            disabled={formLoading}
+            disabled={profileLoading}
             className="mt-6 flex w-full items-center justify-center gap-1.5 rounded border border-border-glow bg-elevated py-2.5 text-xs font-bold uppercase tracking-wider text-text-primary hover:bg-white hover:text-black transition-all cursor-pointer disabled:opacity-50"
           >
-            {formLoading ? "Saving Uplink..." : "Complete Setup & Enter Dashboard"}
+            {profileLoading ? "Saving Uplink..." : "Complete Setup & Enter Dashboard"}
           </button>
         </form>
       </motion.div>
@@ -172,7 +171,8 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ mode, onCancel, onSuccess 
     >
       <button
         onClick={onCancel}
-        className="absolute top-4 left-6 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-text-ghost hover:text-text-primary transition-colors cursor-pointer"
+        disabled={googleLoading}
+        className="absolute top-4 left-6 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-text-ghost hover:text-text-primary transition-colors cursor-pointer disabled:opacity-50"
       >
         <ArrowLeft size={10} /> Back to landing page
       </button>
@@ -201,11 +201,11 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ mode, onCancel, onSuccess 
         
         <button
           onClick={handleGoogleLogin}
-          disabled={formLoading}
+          disabled={googleLoading}
           className="flex w-full items-center justify-center gap-3 rounded bg-white px-4 py-3 text-xs font-semibold uppercase tracking-wider text-black hover:bg-neutral-200 transition-all cursor-pointer shadow-lg disabled:opacity-50"
         >
           <Chrome size={14} />
-          {mode === "login" ? "Connect Google Account" : "Verify Google Account"}
+          {googleLoading ? "Connecting Google..." : (mode === "login" ? "Connect Google Account" : "Verify Google Account")}
         </button>
       </div>
     </motion.div>
