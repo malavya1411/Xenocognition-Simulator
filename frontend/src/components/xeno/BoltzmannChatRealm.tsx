@@ -64,6 +64,47 @@ function QuantumScramble({ text, active }: { text: string; active: boolean }) {
   return <span>{displayText}</span>;
 }
 
+// Superposition text reveal animation
+function SuperpositionText({ text }: { text: string }) {
+  const [displayText, setDisplayText] = useState("");
+  const [resolved, setResolved] = useState(false);
+
+  useEffect(() => {
+    let iterations = 0;
+    const chars = "XYZ0123456789§βθλμΨΩ#%&+";
+    const interval = setInterval(() => {
+      setDisplayText(
+        text
+          .split("")
+          .map((char, index) => {
+            if (char === " ") return " ";
+            if (index < iterations) return char;
+            return chars[Math.floor(Math.random() * chars.length)];
+          })
+          .join("")
+      );
+
+      iterations += 1.5;
+      if (iterations >= text.length + 8) {
+        clearInterval(interval);
+        setDisplayText(text);
+        setResolved(true);
+      }
+    }, 25);
+
+    return () => clearInterval(interval);
+  }, [text]);
+
+  return (
+    <motion.span
+      animate={resolved ? { textShadow: "0 0 10px rgba(167, 139, 250, 0.45)" } : {}}
+      className="font-sans"
+    >
+      ⟢ {displayText}
+    </motion.span>
+  );
+}
+
 export function BoltzmannChatRealm({ initialConcept, onClose }: BoltzmannChatRealmProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -251,18 +292,18 @@ export function BoltzmannChatRealm({ initialConcept, onClose }: BoltzmannChatRea
     canvas.height = height;
 
     const particles: Particle[] = [];
-    const count = 400;
+    const count = 85; // Reduced particle count for a cleaner layout
 
     for (let i = 0; i < count; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        r: Math.random() * 1.6 + 0.4,
-        alpha: Math.random() * 0.7 + 0.1,
-        vx: (Math.random() - 0.5) * 2.5,
-        vy: (Math.random() - 0.5) * 2.5,
+        r: Math.random() * 1.3 + 0.5, // Slightly larger base for light bloom
+        alpha: Math.random() * 0.5 + 0.2,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
         angle: Math.random() * Math.PI * 2,
-        speed: Math.random() * 0.5 + 0.1,
+        speed: 0.15 + Math.random() * 0.25,
         color: Math.random() > 0.4 ? "#a78bfa" : "#f97316", // Cosmic violet & Entropy orange
       });
     }
@@ -278,23 +319,67 @@ export function BoltzmannChatRealm({ initialConcept, onClose }: BoltzmannChatRea
     window.addEventListener("resize", handleResize);
 
     const draw = () => {
-      // Create trailing cosmic smear
-      ctx.fillStyle = "rgba(11, 7, 22, 0.12)";
+      // Clear with higher opacity to dissolve trails quickly and keep it clean
+      ctx.fillStyle = "rgba(11, 7, 22, 0.26)";
       ctx.fillRect(0, 0, width, height);
 
       const cx = width / 2;
       const cy = height / 2;
 
-      // Draw quantum noise ripples when unstable
+      // Draw a single slow scanning line to represent observation grid (calm & cinematic)
+      // Draw a single slow scanning line to represent observation grid (calm & cinematic)
       if (!synchronizedRef.current && !isStabilizingRef.current) {
-        ctx.strokeStyle = "rgba(167, 139, 250, 0.03)";
+        ctx.strokeStyle = "rgba(167, 139, 250, 0.05)";
         ctx.lineWidth = 0.5;
-        for (let i = 0; i < 6; i++) {
-          const y = Math.random() * height;
+        const scanY = (Date.now() * 0.035) % height;
+        ctx.beginPath();
+        ctx.moveTo(0, scanY);
+        ctx.lineTo(width, scanY);
+        ctx.stroke();
+      }
+
+      // Draw space-time fabric lines warping towards the center gateway
+      if (!synchronizedRef.current) {
+        ctx.strokeStyle = "rgba(167, 139, 250, 0.035)";
+        ctx.lineWidth = 0.5;
+        const warpForce = hoverCoreRef.current ? 35 : isStabilizingRef.current ? 120 : 0;
+        for (let r = 60; r < Math.max(width, height) * 0.8; r += 70) {
           ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(width, y);
+          for (let a = 0; a <= Math.PI * 2; a += 0.15) {
+            const bx = cx + Math.cos(a) * r;
+            const by = cy + Math.sin(a) * r;
+            
+            const dx = cx - bx;
+            const dy = cy - by;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            const pull = Math.min(dist, warpForce * (250 / dist));
+            const wx = bx + (dx / dist) * pull;
+            const wy = by + (dy / dist) * pull;
+
+            if (a === 0) ctx.moveTo(wx, wy);
+            else ctx.lineTo(wx, wy);
+          }
+          ctx.closePath();
           ctx.stroke();
+        }
+      }
+
+      // Draw faint connections between nearby quantum particles (fleeting structures)
+      ctx.strokeStyle = "rgba(167, 139, 250, 0.04)";
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i < particles.length; i += 4) {
+        for (let j = i + 1; j < i + 3; j++) {
+          if (j >= particles.length) break;
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 70) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
         }
       }
 
@@ -315,15 +400,22 @@ export function BoltzmannChatRealm({ initialConcept, onClose }: BoltzmannChatRea
             p.y = cy + Math.sin(angle) * r;
           }
         } else if (!synchronizedRef.current && hoverCoreRef.current) {
-          // Jitter and expand orbits under gateway hover
-          p.x += Math.cos(p.angle) * p.speed * 4;
-          p.y += Math.sin(p.angle) * p.speed * 4;
-          p.angle += (Math.random() - 0.5) * 1.2;
+          // Attracted and swirling slowly around core gateway under hover
+          const dx = cx - p.x;
+          const dy = cy - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 400) {
+            const targetAngle = Math.atan2(dy, dx) + Math.PI / 2; // Orbit angle
+            const angleDiff = targetAngle - p.angle;
+            p.angle += Math.sin(angleDiff) * 0.1;
+          }
+          p.x += Math.cos(p.angle) * (p.speed * 2.2);
+          p.y += Math.sin(p.angle) * (p.speed * 2.2);
         } else {
-          // Default drifting
+          // Calm sweeping float
           p.x += Math.cos(p.angle) * p.speed;
           p.y += Math.sin(p.angle) * p.speed;
-          p.angle += (Math.random() - 0.5) * 0.06;
+          p.angle += (Math.random() - 0.5) * 0.03; // Calmer steering
 
           // Warp wraps
           if (p.x < 0) p.x = width;
@@ -332,12 +424,23 @@ export function BoltzmannChatRealm({ initialConcept, onClose }: BoltzmannChatRea
           if (p.y > height) p.y = 0;
         }
 
-        // Draw particle
+        // Draw particle with glowing light core
+        ctx.save();
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = p.color;
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.alpha;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
+
+        // Inner core of intense white light for bloom
+        ctx.fillStyle = "#ffffff";
+        ctx.globalAlpha = p.alpha * 0.8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
       });
 
       rafId = requestAnimationFrame(draw);
@@ -350,7 +453,6 @@ export function BoltzmannChatRealm({ initialConcept, onClose }: BoltzmannChatRea
       cancelAnimationFrame(rafId);
     };
   }, []);
-
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
@@ -362,6 +464,31 @@ export function BoltzmannChatRealm({ initialConcept, onClose }: BoltzmannChatRea
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0b0716] overflow-hidden select-none">
       {/* Background canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
+
+      {/* Cybernetic Telemetry Readouts (FUI overlay) */}
+      {!synchronized && (
+        <>
+          <div className="absolute top-24 left-6 pointer-events-none font-mono text-[7px] text-[#a78bfa]/40 uppercase tracking-widest space-y-1 z-30">
+            <div>// QUANTUM FLUCTUATION UPLINK</div>
+            <div>ENTROPY RATIO: 1.042e-16</div>
+            <div>PROBABILITY INDEX: {isStabilizing ? "COLLAPSING" : "STABLE"}</div>
+            <div>PHASE STATE: {isStabilizing ? "COHERENCE" : "DECAY"}</div>
+          </div>
+          <div className="absolute top-24 right-6 pointer-events-none font-mono text-[7px] text-[#a78bfa]/40 uppercase tracking-widest text-right space-y-1 z-30">
+            <div>SINGULARITY TENSION: 0.9842</div>
+            <div>STABILIZE VALUE: {(stabilizeProgress * 0.982).toFixed(1)}%</div>
+            <div>OBSERVER WEIGHT: LOCKED</div>
+          </div>
+          <div className="absolute bottom-6 left-6 pointer-events-none font-mono text-[7px] text-[#a78bfa]/40 uppercase tracking-widest space-y-1 z-30">
+            <div>LOC: THERMODYNAMIC_CELL_4</div>
+            <div>ISOMER: ENANTIOMER_B</div>
+          </div>
+          <div className="absolute bottom-6 right-6 pointer-events-none font-mono text-[7px] text-[#a78bfa]/40 uppercase tracking-widest text-right space-y-1 z-30">
+            <div>UPLINK: SHIELDED</div>
+            <div>COGNITIVE FIELD: BOSE_EINSTEIN</div>
+          </div>
+        </>
+      )}
 
       {/* Top Header */}
       <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-6 bg-gradient-to-b from-black/60 to-transparent">
@@ -417,9 +544,11 @@ export function BoltzmannChatRealm({ initialConcept, onClose }: BoltzmannChatRea
                 transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
                 className="relative px-8 py-6 bg-[#160e29]/70 border border-[#a78bfa]/40 backdrop-blur-md flex flex-col items-center min-w-[240px]"
               >
-                <span className="font-mono text-[11px] font-bold text-white tracking-[0.2em] select-none text-center leading-normal">
-                  {buttonLabel}
-                </span>
+                {!isStabilizing && (
+                  <span className="font-mono text-[11px] font-bold text-white tracking-[0.2em] select-none text-center leading-normal">
+                    {buttonLabel}
+                  </span>
+                )}
 
                 {isStabilizing && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/80">
@@ -474,22 +603,34 @@ export function BoltzmannChatRealm({ initialConcept, onClose }: BoltzmannChatRea
                   </span>
 
                   {msg.sender === "user" ? (
-                    <div className="p-4 max-w-md rounded bg-[#160e29]/75 border border-slate-700/30 text-slate-200 text-xs font-mono leading-relaxed backdrop-blur-md">
+                    <div className="relative p-4 max-w-md rounded bg-[#160e29]/75 border border-slate-700/20 text-slate-200 text-xs font-mono leading-relaxed backdrop-blur-md">
+                      <div className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l border-slate-500 opacity-55" />
+                      <div className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r border-slate-500 opacity-55" />
+                      <div className="absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l border-slate-500 opacity-55" />
+                      <div className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-slate-500 opacity-55" />
                       {msg.text}
                     </div>
                   ) : (
-                    <div className="w-full max-w-2xl p-5 rounded bg-[#160e29]/80 border border-[#a78bfa]/20 backdrop-blur-lg space-y-2.5">
+                    <div className="relative w-full max-w-2xl p-5 rounded bg-[#160e29]/80 border border-[#a78bfa]/15 shadow-[0_0_35px_rgba(167,139,250,0.06)] backdrop-blur-lg space-y-2.5 overflow-hidden">
+                      {/* Corner brackets */}
+                      <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-[#a78bfa]/50" />
+                      <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t border-r border-[#a78bfa]/50" />
+                      <div className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b border-l border-[#a78bfa]/50" />
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b border-r border-[#a78bfa]/50" />
+                      
+                      {/* Quantum lattice background */}
+                      <div className="absolute inset-0 opacity-[0.015] bg-[radial-gradient(#a78bfa_1.5px,transparent_1.5px)] [background-size:16px_16px] pointer-events-none" />
+
                       {/* Crystallized stream chunks */}
-                      <div className="space-y-2">
+                      <div className="relative z-10 space-y-2">
                         {msg.chunks?.map((chunk, ci) => {
                           if (chunk.type === "signal") {
                             return (
                               <p
                                 key={ci}
                                 className="font-sans text-[14px] leading-relaxed text-white font-semibold"
-                                style={{ textShadow: "0 0 10px rgba(167,139,250,0.3)" }}
                               >
-                                ⟢ {chunk.text}
+                                <SuperpositionText text={chunk.text} />
                               </p>
                             );
                           }
@@ -543,24 +684,31 @@ export function BoltzmannChatRealm({ initialConcept, onClose }: BoltzmannChatRea
             {/* Input form */}
             <form
               onSubmit={handleSend}
-              className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#0b0716] to-transparent flex gap-3"
+              className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#0b0716] via-[#0b0716]/40 to-transparent flex gap-3 z-30"
             >
-              <div className="relative flex-1 flex items-center h-12 bg-black/40 border border-[#a78bfa]/30 rounded hover:border-[#a78bfa] focus-within:border-[#a78bfa] transition-all">
+              <div className="relative flex-1 h-12 bg-black/50 border border-[#a78bfa]/20 rounded overflow-hidden focus-within:border-[#a78bfa] focus-within:shadow-[0_0_15px_rgba(167,139,250,0.1)] transition-all">
+                {/* Micro corner brackets inside input wrapper */}
+                <div className="absolute top-0 left-0 w-1.5 h-1.5 border-t border-l border-[#a78bfa]/50" />
+                <div className="absolute top-0 right-0 w-1.5 h-1.5 border-t border-r border-[#a78bfa]/50" />
+                <div className="absolute bottom-0 left-0 w-1.5 h-1.5 border-b border-l border-[#a78bfa]/50" />
+                <div className="absolute bottom-0 right-0 w-1.5 h-1.5 border-b border-r border-[#a78bfa]/50" />
+                
                 <input
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Inject conceptual entropy..."
+                  placeholder="INJECT TELEMETRY MEASUREMENT INTO OBSERVER CORE..."
                   disabled={isThinking}
-                  className="w-full h-full bg-transparent px-4 font-mono text-[11px] text-white outline-none placeholder:text-slate-500"
+                  className="w-full h-full bg-transparent px-4 font-mono text-[10px] tracking-wider text-white outline-none placeholder:text-violet-800/40 uppercase"
                 />
               </div>
               <button
                 type="submit"
                 disabled={isThinking || !inputValue.trim()}
-                className="w-12 h-12 flex items-center justify-center bg-[#a78bfa] disabled:bg-slate-900 text-black disabled:text-slate-500 rounded shadow-[0_0_15px_rgba(167,139,250,0.15)] transition-all cursor-pointer hover:bg-white"
+                className="w-12 h-12 flex items-center justify-center bg-[#a78bfa] disabled:bg-slate-900 text-black disabled:text-slate-500 transition-all cursor-pointer hover:bg-white"
+                style={{ clipPath: "polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%)" }}
               >
-                <Send size={15} />
+                <Send size={14} />
               </button>
             </form>
           </motion.div>
