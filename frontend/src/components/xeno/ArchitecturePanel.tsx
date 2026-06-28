@@ -27,21 +27,17 @@ export function ArchitecturePanel({
       initial={{ opacity: 0, y: 28 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 110, damping: 16, delay: index * 0.08 }}
-      whileHover={{ y: -4 }}
-      className="group relative flex flex-col overflow-hidden"
+      whileHover={{ y: -6 }}
+      className="group relative flex flex-col overflow-hidden premium-glass"
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border-dim)",
         borderTop: `3px solid ${accentVar}`,
         borderRadius: 12,
         minHeight: 480,
         contain: "layout style paint",
-        boxShadow:
-          "0 1px 0 0 color-mix(in oklab, var(--text-primary) 4%, transparent) inset, 0 18px 50px -20px rgba(0,0,0,0.45)",
       }}
     >
       <header
-        className="flex items-center justify-between gap-3 px-5 py-4"
+        className="flex items-center justify-between gap-3 px-5 py-4 bg-void/35"
         style={{ borderBottom: "1px solid var(--border-dim)" }}
       >
         <div className="flex min-w-0 items-center gap-3">
