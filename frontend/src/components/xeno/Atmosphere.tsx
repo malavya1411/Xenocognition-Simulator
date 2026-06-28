@@ -30,7 +30,13 @@ interface Particle {
   alpha: number;
 }
 
-export function AmbientParticles({ count = 45, activeArch = null }: { count?: number; activeArch?: string | null }) {
+export function AmbientParticles({
+  count = 45,
+  activeArch = null,
+}: {
+  count?: number;
+  activeArch?: string | null;
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const particles = useRef<Particle[]>([]);
 
@@ -153,7 +159,8 @@ export function AmbientParticles({ count = 45, activeArch = null }: { count?: nu
           const d = Math.hypot(dx, dy);
           const maxDist = activeArch === "mycelium" ? 140 : 100;
           if (d < maxDist) {
-            ctx.globalAlpha = (activeArch === "mesh" ? 0.22 : 0.09) * (1 - d / maxDist);
+            ctx.globalAlpha =
+              (activeArch === "mesh" ? 0.22 : 0.09) * (1 - d / maxDist);
             ctx.strokeStyle = ps[i].color;
             ctx.lineWidth = activeArch === "mesh" ? 0.8 : 0.45;
             ctx.beginPath();
@@ -255,7 +262,6 @@ export function CustomCursor() {
           height: 5,
           borderRadius: "50%",
           background: "var(--text-primary)",
-          mixBlendMode: "difference",
         }}
       />
       {/* Elastic lag ring */}
@@ -265,14 +271,12 @@ export function CustomCursor() {
         className="pointer-events-none fixed left-0 top-0 hidden md:block"
         style={{
           zIndex: 9998,
-          width: variant === "hover" ? 44 : 22,
-          height: variant === "hover" ? 44 : 22,
+          width: 24,
+          height: 24,
           borderRadius: "50%",
-          border: "1.2px solid var(--text-primary)",
-          background: variant === "hover" ? "rgba(255, 255, 255, 0.04)" : "transparent",
-          boxShadow: variant === "hover" ? "0 0 12px rgba(255, 255, 255, 0.15)" : "none",
-          mixBlendMode: "difference",
-          transition: "width 240ms cubic-bezier(0.16, 1, 0.3, 1), height 240ms cubic-bezier(0.16, 1, 0.3, 1), background-color 240ms ease, box-shadow 240ms ease",
+          border:
+            "1.2px solid color-mix(in oklab, var(--text-primary) 50%, transparent)",
+          background: "transparent",
         }}
       />
     </>

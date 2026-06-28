@@ -5,24 +5,29 @@ import type { BoltzmannData } from "@/lib/xeno-mock";
 // Glitch character scrambler for noise chunks
 function ScrambleText({ text, active }: { text: string; active: boolean }) {
   const [displayText, setDisplayText] = useState(text);
-  
+
   useEffect(() => {
     if (!active) {
       setDisplayText(text);
       return;
     }
-    
+
     const chars = "▰▱▰▱░▒▓█◣◥▲▼◆◇◈⬘⬙⬚❖⌬⌕⍎⍕⏧⏦";
-    let interval = setInterval(() => {
-      const scrambled = text
-        .split("")
-        .map((char) => {
-          if (char === " ") return " ";
-          return Math.random() > 0.35 ? char : chars[Math.floor(Math.random() * chars.length)];
-        })
-        .join("");
-      setDisplayText(scrambled);
-    }, 180 + Math.random() * 200);
+    const interval = setInterval(
+      () => {
+        const scrambled = text
+          .split("")
+          .map((char) => {
+            if (char === " ") return " ";
+            return Math.random() > 0.35
+              ? char
+              : chars[Math.floor(Math.random() * chars.length)];
+          })
+          .join("");
+        setDisplayText(scrambled);
+      },
+      180 + Math.random() * 200,
+    );
 
     return () => clearInterval(interval);
   }, [text, active]);
@@ -30,7 +35,13 @@ function ScrambleText({ text, active }: { text: string; active: boolean }) {
   return <span>{displayText}</span>;
 }
 
-export function BoltzmannPanel({ data, loading }: { data: BoltzmannData | null; loading: boolean }) {
+export function BoltzmannPanel({
+  data,
+  loading,
+}: {
+  data: BoltzmannData | null;
+  loading: boolean;
+}) {
   const [stabilized, setStabilized] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -48,7 +59,14 @@ export function BoltzmannPanel({ data, loading }: { data: BoltzmannData | null; 
     canvas.height = H;
 
     // Stars/particles
-    const particles: { x: number; y: number; r: number; alpha: number; speed: number; angle: number }[] = [];
+    const particles: {
+      x: number;
+      y: number;
+      r: number;
+      alpha: number;
+      speed: number;
+      angle: number;
+    }[] = [];
     const maxParticles = stabilized ? 15 : 45;
 
     for (let i = 0; i < maxParticles; i++) {
@@ -58,7 +76,7 @@ export function BoltzmannPanel({ data, loading }: { data: BoltzmannData | null; 
         r: Math.random() * 1.5 + 0.5,
         alpha: Math.random() * 0.8 + 0.1,
         speed: Math.random() * 0.4 + 0.1,
-        angle: Math.random() * Math.PI * 2
+        angle: Math.random() * Math.PI * 2,
       });
     }
 
@@ -100,7 +118,9 @@ export function BoltzmannPanel({ data, loading }: { data: BoltzmannData | null; 
         if (p.y < 0) p.y = H;
         if (p.y > H) p.y = 0;
 
-        ctx.fillStyle = stabilized ? "rgba(167, 139, 250, 0.3)" : "rgba(249, 115, 22, 0.25)";
+        ctx.fillStyle = stabilized
+          ? "rgba(167, 139, 250, 0.3)"
+          : "rgba(249, 115, 22, 0.25)";
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
@@ -125,7 +145,9 @@ export function BoltzmannPanel({ data, loading }: { data: BoltzmannData | null; 
           >
             ░▒▓ fluctuating probability ▓▒░
           </motion.div>
-          <span className="font-mono text-[9px] text-text-ghost">quantum entropy: 100%</span>
+          <span className="font-mono text-[9px] text-text-ghost">
+            quantum entropy: 100%
+          </span>
         </div>
       </div>
     );
@@ -135,7 +157,10 @@ export function BoltzmannPanel({ data, loading }: { data: BoltzmannData | null; 
     <div className="relative flex h-full flex-col justify-between overflow-hidden">
       {/* Dynamic CRT Scanline Glitch Overlay */}
       {!stabilized && (
-        <div className="scanlines pointer-events-none absolute inset-0 rounded-lg opacity-40" style={{ zIndex: 1 }} />
+        <div
+          className="scanlines pointer-events-none absolute inset-0 rounded-lg opacity-40"
+          style={{ zIndex: 1 }}
+        />
       )}
 
       {/* Cosmic Quantum Particle Screen */}
@@ -147,7 +172,10 @@ export function BoltzmannPanel({ data, loading }: { data: BoltzmannData | null; 
           borderRadius: 8,
         }}
       >
-        <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none opacity-60" />
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 pointer-events-none opacity-60"
+        />
 
         {/* Text Area with flicker/scramble details */}
         <div
@@ -168,7 +196,9 @@ export function BoltzmannPanel({ data, loading }: { data: BoltzmannData | null; 
                     textShadow: stabilized
                       ? "0 0 10px rgba(167, 139, 250, 0.45)"
                       : "0 0 14px rgba(167, 139, 250, 0.7)",
-                    background: stabilized ? "rgba(167, 139, 250, 0.05)" : undefined,
+                    background: stabilized
+                      ? "rgba(167, 139, 250, 0.05)"
+                      : undefined,
                     padding: stabilized ? "6px 10px" : 0,
                     borderRadius: stabilized ? 4 : 0,
                   }}
@@ -193,7 +223,9 @@ export function BoltzmannPanel({ data, loading }: { data: BoltzmannData | null; 
 
         {/* Instability Indicator overlay */}
         <div className="absolute top-2 right-2 pointer-events-none font-mono text-[8px] uppercase tracking-widest text-text-ghost flex items-center gap-1.5">
-          <span className={`h-1.5 w-1.5 rounded-full ${stabilized ? "bg-purple-500" : "bg-orange-500 animate-ping"}`} />
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${stabilized ? "bg-purple-500" : "bg-orange-500 animate-ping"}`}
+          />
           <span>{stabilized ? "coherent" : "entropy state"}</span>
         </div>
       </div>
@@ -223,7 +255,7 @@ export function BoltzmannPanel({ data, loading }: { data: BoltzmannData | null; 
           >
             {stabilized ? "[ release entropy ]" : "[ stabilize signal ]"}
           </button>
-          
+
           <span className="font-mono text-[9px] text-text-ghost">
             entropy: {stabilized ? "0.02e" : "0.98e"}
           </span>

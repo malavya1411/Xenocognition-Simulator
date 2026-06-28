@@ -11,7 +11,13 @@ interface SwarmAgent {
   clusterIdx: number; // 0: Affirmative, 1: Negative, 2: Abstain
 }
 
-export function HivePanel({ data, loading }: { data: HiveData | null; loading: boolean }) {
+export function HivePanel({
+  data,
+  loading,
+}: {
+  data: HiveData | null;
+  loading: boolean;
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const agentsRef = useRef<SwarmAgent[]>([]);
   const animationRef = useRef<number>(0);
@@ -22,11 +28,14 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
   const H = 200;
 
   // Pre-calculate target cluster coordinates
-  const clusterCenters = useMemo(() => [
-    { x: W * 0.25, y: H * 0.55, name: "Affirmative", color: "#fbbf24" }, // Left
-    { x: W * 0.75, y: H * 0.55, name: "Negative", color: "#f59e0b" },    // Right
-    { x: W * 0.5, y: H * 0.35, name: "Abstain", color: "#475569" }        // Top Center
-  ], []);
+  const clusterCenters = useMemo(
+    () => [
+      { x: W * 0.25, y: H * 0.55, name: "Affirmative", color: "#fbbf24" }, // Left
+      { x: W * 0.75, y: H * 0.55, name: "Negative", color: "#f59e0b" }, // Right
+      { x: W * 0.5, y: H * 0.35, name: "Abstain", color: "#475569" }, // Top Center
+    ],
+    [],
+  );
 
   // Initialize/reset agents when state changes
   useEffect(() => {
@@ -63,7 +72,7 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
         vx: (Math.random() - 0.5) * 3,
         vy: (Math.random() - 0.5) * 3,
         clusterIdx,
-        color: clusterIdx >= 0 ? clusterCenters[clusterIdx].color : "#fbbf24"
+        color: clusterIdx >= 0 ? clusterCenters[clusterIdx].color : "#fbbf24",
       });
     }
 
@@ -75,7 +84,7 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
-    
+
     // Support retina displays
     const dpr = window.devicePixelRatio || 1;
     canvas.width = W * dpr;
@@ -98,7 +107,14 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
           if (!voteInfo) return;
 
           // Glowing underlying heatmap
-          const gradient = ctx.createRadialGradient(c.x, c.y, 2, c.x, c.y, 40 + voteInfo.percentage * 0.2);
+          const gradient = ctx.createRadialGradient(
+            c.x,
+            c.y,
+            2,
+            c.x,
+            c.y,
+            40 + voteInfo.percentage * 0.2,
+          );
           gradient.addColorStop(0, `${c.color}1c`);
           gradient.addColorStop(1, "rgba(6, 6, 12, 0)");
           ctx.fillStyle = gradient;
@@ -116,7 +132,8 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
           ctx.setLineDash([]); // Reset line dash
 
           // Draw cluster titles
-          ctx.fillStyle = hoveredCluster === c.name ? "#ffffff" : "rgba(148, 163, 184, 0.4)";
+          ctx.fillStyle =
+            hoveredCluster === c.name ? "#ffffff" : "rgba(148, 163, 184, 0.4)";
           ctx.font = "bold 8px 'Space Grotesk', sans-serif";
           ctx.textAlign = "center";
           ctx.fillText(c.name.toUpperCase(), c.x, c.y - 32);
@@ -143,7 +160,7 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
         const dist = Math.hypot(dx, dy);
 
         // Physics: attraction force + swarm turbulence noise
-        let force = loading ? 0.05 : 0.025;
+        const force = loading ? 0.05 : 0.025;
         if (dist > 1) {
           agent.vx += (dx / dist) * force;
           agent.vy += (dy / dist) * force;
@@ -184,14 +201,18 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
         ctx.fillStyle = data ? agent.color : "#fbbf24";
         ctx.beginPath();
         // Slightly larger for active hovered cluster particles
-        const size = (data && clusterCenters[agent.clusterIdx]?.name === hoveredCluster) ? 2 : 1.25;
+        const size =
+          data && clusterCenters[agent.clusterIdx]?.name === hoveredCluster
+            ? 2
+            : 1.25;
         ctx.arc(agent.x, agent.y, size, 0, Math.PI * 2);
         ctx.fill();
 
         // Bioluminescent filament connections inside same clusters
         if (data && !loading) {
           agents.forEach((other) => {
-            if (agent === other || agent.clusterIdx !== other.clusterIdx) return;
+            if (agent === other || agent.clusterIdx !== other.clusterIdx)
+              return;
             const odx = other.x - agent.x;
             const ody = other.y - agent.y;
             const odist = Math.hypot(odx, ody);
@@ -219,7 +240,7 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
   return (
     <div className="flex h-full flex-col justify-between">
       {/* Living Swarm Canvas Viewport */}
-      <div 
+      <div
         className="relative overflow-hidden flex justify-center items-center"
         style={{
           background: "#08080f",
@@ -229,7 +250,7 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
         }}
       >
         <canvas ref={canvasRef} className="block" />
-        
+
         {/* Swarm State overlay indicators */}
         <div className="absolute top-2 left-2 flex gap-1.5 pointer-events-none">
           <span className="h-[5px] w-[5px] rounded-full bg-amber-500 animate-ping" />
@@ -242,19 +263,19 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
         {data && !loading && (
           <div className="absolute inset-0 pointer-events-none flex">
             {/* Left quadrant - Affirmative */}
-            <div 
+            <div
               className="w-1/3 h-full pointer-events-auto cursor-pointer"
               onMouseEnter={() => setHoveredCluster("Affirmative")}
               onMouseLeave={() => setHoveredCluster(null)}
             />
             {/* Middle top quadrant - Abstain */}
-            <div 
+            <div
               className="w-1/3 h-1/2 pointer-events-auto cursor-pointer"
               onMouseEnter={() => setHoveredCluster("Abstain")}
               onMouseLeave={() => setHoveredCluster(null)}
             />
             {/* Right quadrant - Negative */}
-            <div 
+            <div
               className="w-1/3 h-full pointer-events-auto cursor-pointer ml-auto"
               onMouseEnter={() => setHoveredCluster("Negative")}
               onMouseLeave={() => setHoveredCluster(null)}
@@ -271,7 +292,10 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="font-sans text-5xl font-extrabold leading-none tracking-tighter"
-              style={{ color: "var(--accent-hive)", textShadow: "0 0 25px rgba(251, 191, 36, 0.25)" }}
+              style={{
+                color: "var(--accent-hive)",
+                textShadow: "0 0 25px rgba(251, 191, 36, 0.25)",
+              }}
             >
               {top.percentage.toFixed(0)}%
             </motion.p>
@@ -294,7 +318,10 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
                     style={{
                       background: colors[i],
                       opacity: hoveredCluster === v.option ? 1 : 0.65,
-                      boxShadow: hoveredCluster === v.option ? `0 0 12px ${colors[i]}` : "none"
+                      boxShadow:
+                        hoveredCluster === v.option
+                          ? `0 0 12px ${colors[i]}`
+                          : "none",
                     }}
                     className="h-full transition-all duration-300"
                   />
@@ -305,11 +332,12 @@ export function HivePanel({ data, loading }: { data: HiveData | null; loading: b
 
           {/* Swarm entity error detection warning */}
           {data.singularErrors.length > 0 && (
-            <div
-              className="p-2.5 font-mono text-[9px] uppercase tracking-widest rounded border flex items-center gap-2 border-amber-500/20 bg-amber-500/5 text-amber-500"
-            >
+            <div className="p-2.5 font-mono text-[9px] uppercase tracking-widest rounded border flex items-center gap-2 border-amber-500/20 bg-amber-500/5 text-amber-500">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-              <span>Collective error: singular pronouns identified: {data.singularErrors.join(", ")}</span>
+              <span>
+                Collective error: singular pronouns identified:{" "}
+                {data.singularErrors.join(", ")}
+              </span>
             </div>
           )}
 
