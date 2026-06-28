@@ -41,9 +41,6 @@ function LandingPage() {
   // Landing Page Sub-Views: "hero" | "login" | "signup" | "onboarding"
   const [view, setView] = useState<"hero" | "login" | "signup" | "onboarding">("hero");
 
-  // Track login state transitions to trigger onboarding
-  const [prevUserUid, setPrevUserUid] = useState<string | null>(null);
-
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.documentElement.classList.toggle("dark", theme === "dark");
@@ -51,27 +48,22 @@ function LandingPage() {
     }
   }, [theme]);
 
-  // Handle Auth transitions
+  // Handle Auth transitions and onboarding detection
   useEffect(() => {
     if (!loading) {
       if (user) {
-        if (prevUserUid === null) {
-          // User just successfully logged in
-          if (profile) {
-            if (profile.onboardingCompleted) {
-              navigate({ to: "/dashboard" });
-            } else {
-              setView("onboarding");
-            }
+        if (profile) {
+          if (!profile.onboardingCompleted) {
+            setView("onboarding");
+          } else {
+            setView("hero");
           }
         }
-        setPrevUserUid(user.uid);
       } else {
-        setPrevUserUid(null);
         setView("hero");
       }
     }
-  }, [user, profile, loading, prevUserUid, navigate]);
+  }, [user, profile, loading]);
 
   const handleAuthSuccess = () => {
     // If the user object is updated, the useEffect above will redirect them
