@@ -1,4 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
+import fs from "node:fs";
+import path from "node:path";
 import {
   ARCHITECTURE_PROMPTS,
   type ArchitectureId,
@@ -14,14 +16,45 @@ interface GeminiResponse {
   }>;
 }
 
-// Server function that securely makes calls to the Gemini API
+// Read all Gemini keys from the .env file to support rotation fallback
+function getApiKeys(): string[] {
+  try {
+    const envPath = path.join(process.cwd(), ".env");
+    if (!fs.existsSync(envPath)) {
+      const envKey = process.env.GEMINI_API_KEY;
+      return envKey && envKey !== "your-api-key-here" ? [envKey] : [];
+    }
+
+    const content = fs.readFileSync(envPath, "utf-8");
+    const lines = content.split("\n");
+    const keys: string[] = [];
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("GEMINI_API_KEY=")) {
+        const value = trimmed.substring("GEMINI_API_KEY=".length).trim();
+        if (value && value !== "your-api-key-here" && !keys.includes(value)) {
+          keys.push(value);
+        }
+      }
+    }
+
+    return keys;
+  } catch (error) {
+    console.error("Error reading .env file for keys:", error);
+    const envKey = process.env.GEMINI_API_KEY;
+    return envKey && envKey !== "your-api-key-here" ? [envKey] : [];
+  }
+}
+
+// Server function that securely makes calls to the Gemini API with automatic key rotation on failure/exhaustion
 export const executeCognitiveUplink = createServerFn({ method: "POST" })
   .validator((data: { architecture: ArchitectureId; input: string }) => data)
   .handler(async ({ data: { architecture, input } }) => {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKeys = getApiKeys();
 
-    if (!apiKey || apiKey === "your-api-key-here") {
-      throw new Error("GEMINI_API_KEY is not configured on the server.");
+    if (apiKeys.length === 0) {
+      throw new Error("No valid GEMINI_API_KEY found in the environment or .env file.");
     }
 
     const archConfig = ARCHITECTURE_PROMPTS[architecture];
@@ -29,48 +62,73 @@ export const executeCognitiveUplink = createServerFn({ method: "POST" })
       throw new Error(`Unknown architecture: ${architecture}`);
     }
 
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [{ text: `Input concept to process: "${input}"` }],
+    let lastError: any = null;
+
+    // Loop through all keys. If one is exhausted (429/403) or fails, try the next one.
+    for (let i = 0; i < apiKeys.length; i++) {
+      const apiKey = apiKeys[i];
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [{ text: `Input concept to process: "${input}"` }],
+                },
+              ],
+              systemInstruction: {
+                parts: [{ text: archConfig.systemPrompt }],
               },
-            ],
-            systemInstruction: {
-              parts: [{ text: archConfig.systemPrompt }],
-            },
-            generationConfig: {
-              responseMimeType: "application/json",
-              temperature: archConfig.temperature,
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Gemini API returned status ${response.status}: ${errorText}`
+              generationConfig: {
+                responseMimeType: "application/json",
+                temperature: archConfig.temperature,
+              },
+            }),
+          }
         );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          // Status 429: Resource Exhausted (Rate Limit / Quota Exceeded)
+          // Status 403: Forbidden (often returned when a key quota is fully depleted)
+          if (response.status === 429 || response.status === 403) {
+            console.warn(
+              `[Xeno API Key Rotation] Key ${i + 1}/${apiKeys.length} exhausted (Status ${response.status}). Trying next key...`
+            );
+            lastError = new Error(
+              `Key ${i + 1} exhausted (Status ${response.status}): ${response.statusText} - ${errorText}`
+            );
+            continue;
+          }
+          throw new Error(
+            `Gemini API returned status ${response.status}: ${errorText}`
+          );
+        }
+
+        const json = (await response.json()) as GeminiResponse;
+        const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!rawText) {
+          throw new Error("No response content generated by Gemini.");
+        }
+
+        // Return parsed JSON from successful API key
+        return JSON.parse(rawText.trim());
+      } catch (error: any) {
+        lastError = error;
+        if (i < apiKeys.length - 1) {
+          console.warn(
+            `[Xeno API Key Rotation] Error with key ${i + 1}/${apiKeys.length}: ${error.message || error}. Trying next key...`
+          );
+          continue;
+        }
       }
-
-      const json = (await response.json()) as GeminiResponse;
-      const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!rawText) {
-        throw new Error("No response content generated by Gemini.");
-      }
-
-      return JSON.parse(rawText.trim());
-    } catch (error) {
-      console.error(`[Xeno API Server Error] [${architecture}]:`, error);
-      throw error;
     }
+
+    throw lastError || new Error("All configured Gemini API keys failed or were exhausted.");
   });
