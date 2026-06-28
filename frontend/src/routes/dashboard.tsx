@@ -44,6 +44,9 @@ import {
 import { ProcessingOverlay } from "@/components/xeno/ProcessingOverlay";
 import { OctopusChatRealm } from "@/components/xeno/OctopusChatRealm";
 import { MycelialChatRealm } from "@/components/xeno/MycelialChatRealm";
+import { HiveChatRealm } from "@/components/xeno/HiveChatRealm";
+import { BoltzmannChatRealm } from "@/components/xeno/BoltzmannChatRealm";
+import { MeshChatRealm } from "@/components/xeno/MeshChatRealm";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardComponent,
@@ -84,6 +87,9 @@ function DashboardComponent() {
   const [isFocused, setIsFocused] = useState(false);
   const [showOctopusRealm, setShowOctopusRealm] = useState(false);
   const [showMycelialRealm, setShowMycelialRealm] = useState(false);
+  const [showHiveRealm, setShowHiveRealm] = useState(false);
+  const [showBoltzmannRealm, setShowBoltzmannRealm] = useState(false);
+  const [showMeshRealm, setShowMeshRealm] = useState(false);
 
   const [archs, setArchs] = useState<Record<ArchId, ArchState>>({
     octopus: { status: "idle", data: null },
@@ -358,6 +364,30 @@ function DashboardComponent() {
                           ⬡ INITIATE UPLINK REALM
                         </button>
                       )}
+                      {activeTab === "hive" && (
+                        <button
+                          onClick={() => setShowHiveRealm(true)}
+                          className="w-full mt-4 flex items-center justify-center gap-2 rounded border border-[#fbbf24]/30 hover:border-[#fbbf24] bg-[#fbbf24]/5 hover:bg-[#fbbf24]/15 py-2 text-[10px] font-mono tracking-widest text-[#fbbf24] transition-all cursor-pointer uppercase font-bold"
+                        >
+                          🐝 INITIATE SWARM REALM
+                        </button>
+                      )}
+                      {activeTab === "boltzmann" && (
+                        <button
+                          onClick={() => setShowBoltzmannRealm(true)}
+                          className="w-full mt-4 flex items-center justify-center gap-2 rounded border border-[#a78bfa]/30 hover:border-[#a78bfa] bg-[#a78bfa]/5 hover:bg-[#a78bfa]/15 py-2 text-[10px] font-mono tracking-widest text-[#a78bfa] transition-all cursor-pointer uppercase font-bold"
+                        >
+                          ⚛ INITIATE QUANTUM REALM
+                        </button>
+                      )}
+                      {activeTab === "mesh" && (
+                        <button
+                          onClick={() => setShowMeshRealm(true)}
+                          className="w-full mt-4 flex items-center justify-center gap-2 rounded border border-[#cbd5e1]/30 hover:border-[#cbd5e1] bg-[#cbd5e1]/5 hover:bg-[#cbd5e1]/15 py-2 text-[10px] font-mono tracking-widest text-[#cbd5e1] transition-all cursor-pointer uppercase font-bold"
+                        >
+                          🕸 INITIATE NEURAL REALM
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -502,6 +532,36 @@ function DashboardComponent() {
           initialConcept={input.trim() || submitted || "xenocognition"}
           onClose={() => {
             setShowMycelialRealm(false);
+            setInput("");
+          }}
+        />
+      )}
+
+      {showHiveRealm && (
+        <HiveChatRealm
+          initialConcept={input.trim() || submitted || "xenocognition"}
+          onClose={() => {
+            setShowHiveRealm(false);
+            setInput("");
+          }}
+        />
+      )}
+
+      {showBoltzmannRealm && (
+        <BoltzmannChatRealm
+          initialConcept={input.trim() || submitted || "xenocognition"}
+          onClose={() => {
+            setShowBoltzmannRealm(false);
+            setInput("");
+          }}
+        />
+      )}
+
+      {showMeshRealm && (
+        <MeshChatRealm
+          initialConcept={input.trim() || submitted || "xenocognition"}
+          onClose={() => {
+            setShowMeshRealm(false);
             setInput("");
           }}
         />
