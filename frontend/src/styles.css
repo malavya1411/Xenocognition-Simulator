@@ -5,23 +5,43 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Deep Space Laboratory */
-  --void: #050508;
-  --base: #0a0a0f;
-  --surface: #13131a;
-  --elevated: #1c1c26;
-  --border-dim: #252530;
-  --border-glow: #3a3a50;
-  --text-primary: #f0f0f5;
-  --text-secondary: #9a9aa8;
-  --text-ghost: #5a5a6a;
-  --alert: #ff4d4d;
+  /* Speculative Neuroscience Laboratory - Dark Abyss */
+  --void: #030306;
+  --base: #06060c;
+  --surface: rgba(14, 14, 25, 0.45);
+  --elevated: rgba(22, 22, 38, 0.7);
+  --border-dim: rgba(255, 255, 255, 0.05);
+  --border-glow: rgba(255, 255, 255, 0.12);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-ghost: #475569;
+  --alert: #ef4444;
 
-  --accent-octopus: #ff6b35;
-  --accent-mycelium: #7ee787;
-  --accent-hive: #ffd54f;
-  --accent-boltzmann: #a78bfa;
-  --accent-mesh: #f472b6;
+  /* Cognitive Architectures Specific Visual Identities */
+  --accent-octopus: #00f0ff; /* bioluminescent cyan */
+  --accent-octopus-pink: #ec4899; /* soft pink highlights */
+  --accent-octopus-purple: #8b5cf6; /* purple */
+  --accent-octopus-bg: #07091e; /* deep ocean blue base */
+
+  --accent-mycelium: #ece3d4; /* warm fungal ivory */
+  --accent-mycelium-green: #10b981; /* forest green */
+  --accent-mycelium-amber: #f59e0b; /* organic amber */
+  --accent-mycelium-bg: #0c0d0a; /* forest loam base */
+
+  --accent-hive: #fbbf24; /* honey gold */
+  --accent-hive-alt: #f59e0b; /* amber */
+  --accent-hive-bg: #120e05; /* swarm cell base */
+
+  --accent-boltzmann: #a78bfa; /* cosmic violet */
+  --accent-boltzmann-orange: #f97316; /* entropy orange */
+  --accent-boltzmann-blue: #06b6d4; /* particle blue */
+  --accent-boltzmann-bg: #0b0716; /* high-entropy cosmos base */
+
+  --accent-mesh: #cbd5e1; /* silver */
+  --accent-mesh-purple: #c084fc; /* soft purple */
+  --accent-mesh-cyan: #22d3ee; /* mesh cyan */
+  --accent-mesh-bg: #0a0c10; /* post-human mesh base */
+
   --accent-white: #ffffff;
 
   /* Aliases kept for existing panel components */
@@ -33,7 +53,7 @@
   --text-muted: var(--text-ghost);
 
   /* shadcn compat */
-  --radius: 0.5rem;
+  --radius: 0.75rem;
   --background: var(--base);
   --foreground: var(--text-primary);
   --card: var(--surface);
@@ -56,23 +76,24 @@
 }
 
 .light {
-  --void: #e8e8ec;
-  --base: #f0f0f5;
-  --surface: #ffffff;
-  --elevated: #eaeaef;
-  --border-dim: #d1d1d6;
-  --border-glow: #8e8e93;
-  --text-primary: #0a0a0f;
-  --text-secondary: #484852;
-  --text-ghost: #8e8e93;
-  --alert: #c11a1a;
+  /* Still fallback, but matches premium laboratory look */
+  --void: #f1f5f9;
+  --base: #f8fafc;
+  --surface: rgba(255, 255, 255, 0.75);
+  --elevated: rgba(241, 245, 249, 0.85);
+  --border-dim: rgba(15, 23, 42, 0.08);
+  --border-glow: rgba(15, 23, 42, 0.16);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-ghost: #94a3b8;
+  --alert: #dc2626;
 
-  --accent-octopus: #d84315;
-  --accent-mycelium: #2e7d32;
-  --accent-hive: #b8860b;
-  --accent-boltzmann: #7e57c2;
-  --accent-mesh: #ec407a;
-  --accent-white: #0a0a0f;
+  --accent-octopus: #0284c7;
+  --accent-mycelium: #059669;
+  --accent-hive: #d97706;
+  --accent-boltzmann: #7c3aed;
+  --accent-mesh: #475569;
+  --accent-white: #0f172a;
 
   --bg-primary: var(--base);
   --bg-secondary: var(--surface);
@@ -143,35 +164,52 @@
     color: var(--text-primary);
     font-family: var(--font-sans);
     transition:
-      background-color 400ms ease,
-      color 400ms ease;
+      background-color 800ms cubic-bezier(0.16, 1, 0.3, 1),
+      color 800ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   body {
     cursor: none;
+    overflow-y: auto;
   }
   @media (max-width: 768px) {
     body {
       cursor: auto;
     }
   }
+
+  /* Custom thin premium scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--void);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-glow);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+  }
 }
 
 /* ---------- Atmosphere ---------- */
 
 @utility dot-grid {
-  background-image: radial-gradient(circle, var(--text-ghost) 1px, transparent 1px);
-  background-size: 28px 28px;
-  opacity: 0.06;
+  background-image: radial-gradient(circle, var(--text-ghost) 1.2px, transparent 1.2px);
+  background-size: 32px 32px;
+  opacity: 0.08;
 }
 
 @utility glow-text {
-  text-shadow: 0 0 12px currentColor;
+  text-shadow: 0 0 16px currentColor;
 }
 
 @utility chromatic-text {
   text-shadow:
-    -1px 0 color-mix(in oklab, var(--accent-octopus) 60%, transparent),
-    1px 0 color-mix(in oklab, var(--accent-boltzmann) 60%, transparent);
+    -1.5px 0 color-mix(in oklab, var(--accent-octopus) 60%, transparent),
+    1.5px 0 color-mix(in oklab, var(--accent-boltzmann) 60%, transparent);
 }
 
 @utility scanlines {
@@ -179,23 +217,33 @@
     0deg,
     transparent 0,
     transparent 2px,
-    rgba(0, 0, 0, 0.18) 2px,
-    rgba(0, 0, 0, 0.18) 3px
+    rgba(0, 0, 0, 0.25) 2px,
+    rgba(0, 0, 0, 0.25) 3px
   );
 }
 
 @utility film-grain {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>");
-  opacity: 0.04;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.45 0'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.7'/></svg>");
+  opacity: 0.05;
   mix-blend-mode: overlay;
 }
 
 @utility vignette {
   background: radial-gradient(
     ellipse at center,
-    transparent 40%,
-    color-mix(in oklab, var(--void) 70%, transparent) 100%
+    transparent 35%,
+    color-mix(in oklab, var(--void) 85%, transparent) 100%
   );
+}
+
+@utility premium-glass {
+  backdrop-filter: blur(20px);
+  background: var(--surface);
+  border: 1px solid var(--border-dim);
+  box-shadow: 
+    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+    0 20px 40px -15px rgba(0, 0, 0, 0.6);
+  transition: all 400ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes drift {
@@ -203,26 +251,26 @@
     background-position: 0 0;
   }
   100% {
-    background-position: 28px 28px;
+    background-position: 32px 32px;
   }
 }
 @utility dot-drift {
-  animation: drift 30s linear infinite;
+  animation: drift 40s linear infinite;
 }
 
 @keyframes pulse-ring {
   0%,
   100% {
     transform: scale(1);
-    opacity: 0.8;
+    opacity: 0.7;
   }
   50% {
-    transform: scale(1.08);
-    opacity: 1;
+    transform: scale(1.06);
+    opacity: 0.95;
   }
 }
 @utility pulse-ring {
-  animation: pulse-ring 2.4s ease-in-out infinite;
+  animation: pulse-ring 2.8s ease-in-out infinite;
 }
 
 @keyframes glitch-shift {
@@ -231,45 +279,59 @@
     transform: translateX(0);
   }
   20% {
-    transform: translateX(-2px);
+    transform: translateX(-1.5px);
   }
   40% {
-    transform: translateX(2px);
+    transform: translateX(1.5px);
   }
   60% {
-    transform: translateX(-1px);
+    transform: translateX(-0.8px);
   }
 }
 @utility glitch {
-  animation: glitch-shift 0.3s ease-in-out infinite;
+  animation: glitch-shift 0.4s ease-in-out infinite;
 }
 
 @keyframes flicker-op {
   0%, 100% { opacity: 1; }
-  47% { opacity: 0.97; }
-  48% { opacity: 0.92; }
+  47% { opacity: 0.98; }
+  48% { opacity: 0.94; }
   49% { opacity: 1; }
-  82% { opacity: 0.95; }
+  82% { opacity: 0.96; }
   83% { opacity: 1; }
 }
 @utility crt-flicker {
-  animation: flicker-op 4s ease-in-out infinite;
+  animation: flicker-op 5s ease-in-out infinite;
 }
 
 @keyframes flicker {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.7; }
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.75; }
 }
 @utility flicker {
-  animation: flicker 1.6s ease-in-out infinite;
+  animation: flicker 1.8s ease-in-out infinite;
 }
 
 @keyframes sphere-rot {
-  from { transform: rotateY(0deg) rotateX(15deg); }
-  to { transform: rotateY(360deg) rotateX(15deg); }
+  from { transform: rotateY(0deg) rotateX(10deg); }
+  to { transform: rotateY(360deg) rotateX(10deg); }
 }
 @utility sphere-rot {
-  animation: sphere-rot 60s linear infinite;
+  animation: sphere-rot 80s linear infinite;
+}
+
+@keyframes wave-pulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.02);
+  }
+}
+@utility wave-pulse {
+  animation: wave-pulse 4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -280,3 +342,4 @@
     transition-duration: 0.01ms !important;
   }
 }
+
