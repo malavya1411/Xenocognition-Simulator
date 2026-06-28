@@ -43,6 +43,7 @@ import {
 } from "@/components/xeno/Atmosphere";
 import { ProcessingOverlay } from "@/components/xeno/ProcessingOverlay";
 import { OctopusChatRealm } from "@/components/xeno/OctopusChatRealm";
+import { MycelialChatRealm } from "@/components/xeno/MycelialChatRealm";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardComponent,
@@ -82,6 +83,7 @@ function DashboardComponent() {
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [showOctopusRealm, setShowOctopusRealm] = useState(false);
+  const [showMycelialRealm, setShowMycelialRealm] = useState(false);
 
   const [archs, setArchs] = useState<Record<ArchId, ArchState>>({
     octopus: { status: "idle", data: null },
@@ -125,6 +127,8 @@ function DashboardComponent() {
 
     if (activeTab === "octopus") {
       setShowOctopusRealm(true);
+    } else if (activeTab === "mycelium") {
+      setShowMycelialRealm(true);
     } else {
       runSimulation(query);
     }
@@ -346,6 +350,14 @@ function DashboardComponent() {
                           🐙 INITIATE UPLINK REALM
                         </button>
                       )}
+                      {activeTab === "mycelium" && (
+                        <button
+                          onClick={() => setShowMycelialRealm(true)}
+                          className="w-full mt-4 flex items-center justify-center gap-2 rounded border border-[#22C55E]/30 hover:border-[#22C55E] bg-[#22C55E]/5 hover:bg-[#22C55E]/15 py-2 text-[10px] font-mono tracking-widest text-[#22C55E] transition-all cursor-pointer uppercase font-bold"
+                        >
+                          ⬡ INITIATE UPLINK REALM
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -480,6 +492,16 @@ function DashboardComponent() {
           initialConcept={input.trim() || submitted || "xenocognition"}
           onClose={() => {
             setShowOctopusRealm(false);
+            setInput("");
+          }}
+        />
+      )}
+
+      {showMycelialRealm && (
+        <MycelialChatRealm
+          initialConcept={input.trim() || submitted || "xenocognition"}
+          onClose={() => {
+            setShowMycelialRealm(false);
             setInput("");
           }}
         />
