@@ -353,34 +353,40 @@
       inset 0 0 10px rgba(0, 240, 255, 0.1);
   }
 }
-@utility neon-border-pulse {
-  animation: neon-border-pulse 2.8s ease-in-out infinite;
-}
 
 @keyframes text-flicker-in {
-  0% { opacity: 0; }
-  5% { opacity: 0.7; }
-  8% { opacity: 0.2; }
-  12% { opacity: 0.9; }
-  16% { opacity: 0.5; }
-  20% { opacity: 1; }
+  0%   { opacity: 0; }
+  5%   { opacity: 0.7; }
+  8%   { opacity: 0.2; }
+  12%  { opacity: 0.9; }
+  16%  { opacity: 0.5; }
+  20%  { opacity: 1; }
   100% { opacity: 1; }
-}
-@utility text-flicker-in {
-  animation: text-flicker-in 1.4s ease-out forwards;
 }
 
 @keyframes scan-line-move {
-  0% { transform: translateY(-100%); }
+  0%   { transform: translateY(-100%); }
   100% { transform: translateY(100vh); }
-}
-@utility scan-line-move {
-  animation: scan-line-move 8s linear infinite;
 }
 
 @keyframes arch-chip-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+  .neon-border-pulse {
+    animation: neon-border-pulse 2.8s ease-in-out infinite;
+  }
+  .text-flicker-in {
+    animation: text-flicker-in 1.4s ease-out forwards;
+  }
+  .scan-line-move {
+    animation: scan-line-move 8s linear infinite;
+  }
+  .arch-chip-in {
+    animation: arch-chip-in 0.4s ease-out forwards;
+  }
 }
 
 
