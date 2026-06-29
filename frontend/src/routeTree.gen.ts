@@ -9,12 +9,25 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SyncRouteImport } from './routes/sync'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ArchitecturesRouteImport } from './routes/architectures'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MindArchitectureRouteImport } from './routes/mind.$architecture'
 
+const SyncRoute = SyncRouteImport.update({
+  id: '/sync',
+  path: '/sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArchitecturesRoute = ArchitecturesRouteImport.update({
+  id: '/architectures',
+  path: '/architectures',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -22,40 +35,78 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MindArchitectureRoute = MindArchitectureRouteImport.update({
+  id: '/mind/$architecture',
+  path: '/mind/$architecture',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/architectures': typeof ArchitecturesRoute
   '/dashboard': typeof DashboardRoute
+  '/sync': typeof SyncRoute
+  '/mind/$architecture': typeof MindArchitectureRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/architectures': typeof ArchitecturesRoute
   '/dashboard': typeof DashboardRoute
+  '/sync': typeof SyncRoute
+  '/mind/$architecture': typeof MindArchitectureRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/architectures': typeof ArchitecturesRoute
   '/dashboard': typeof DashboardRoute
+  '/sync': typeof SyncRoute
+  '/mind/$architecture': typeof MindArchitectureRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard'
+  fullPaths:
+    '/' | '/architectures' | '/dashboard' | '/sync' | '/mind/$architecture'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard'
-  id: '__root__' | '/' | '/dashboard'
+  to: '/' | '/architectures' | '/dashboard' | '/sync' | '/mind/$architecture'
+  id:
+    | '__root__'
+    | '/'
+    | '/architectures'
+    | '/dashboard'
+    | '/sync'
+    | '/mind/$architecture'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ArchitecturesRoute: typeof ArchitecturesRoute
   DashboardRoute: typeof DashboardRoute
+  SyncRoute: typeof SyncRoute
+  MindArchitectureRoute: typeof MindArchitectureRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sync': {
+      id: '/sync'
+      path: '/sync'
+      fullPath: '/sync'
+      preLoaderRoute: typeof SyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/architectures': {
+      id: '/architectures'
+      path: '/architectures'
+      fullPath: '/architectures'
+      preLoaderRoute: typeof ArchitecturesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -65,12 +116,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mind/$architecture': {
+      id: '/mind/$architecture'
+      path: '/mind/$architecture'
+      fullPath: '/mind/$architecture'
+      preLoaderRoute: typeof MindArchitectureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ArchitecturesRoute: ArchitecturesRoute,
   DashboardRoute: DashboardRoute,
+  SyncRoute: SyncRoute,
+  MindArchitectureRoute: MindArchitectureRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

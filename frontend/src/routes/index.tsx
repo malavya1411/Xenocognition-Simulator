@@ -63,13 +63,13 @@ function LandingPage() {
   useEffect(() => {
     if (!loading && user && profile) {
       if (view === "login" || view === "signup") {
-        navigate({ to: "/dashboard" });
+        navigate({ to: "/sync" });
       }
     }
   }, [user, profile, loading, view, navigate]);
 
   const handleAuthSuccess = () => {
-    navigate({ to: "/dashboard" });
+    navigate({ to: "/sync" });
   };
 
   const handleLogout = async () => {
@@ -236,7 +236,7 @@ function LandingPage() {
                     </p>
                     <div className="flex gap-4">
                       <button
-                        onClick={() => navigate({ to: "/dashboard" })}
+                        onClick={() => navigate({ to: "/architectures" })}
                         className="group flex items-center gap-2.5 rounded-full px-7 py-3 text-[11px] font-bold uppercase tracking-wider text-black transition-all duration-300 cursor-pointer shadow-lg hover:scale-105"
                         style={{
                           background: "linear-gradient(135deg, #00f0ff, #22d3ee)",
