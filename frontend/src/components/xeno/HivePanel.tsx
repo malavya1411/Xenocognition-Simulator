@@ -234,7 +234,7 @@ export function HivePanel({
   const top = data?.votes[0];
 
   return (
-    <div className="flex h-full flex-col justify-between">
+    <div className={`flex h-full flex-col ${previewMode ? "justify-center items-center" : "justify-between"}`}>
       {/* Living Swarm Canvas Viewport */}
       <div
         className="relative overflow-hidden flex justify-center items-center"

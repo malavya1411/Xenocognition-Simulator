@@ -133,7 +133,7 @@ export function MyceliumPanel({ data, loading, previewMode = false }: { data: My
   }
 
   return (
-    <div className="relative flex h-full flex-col justify-between">
+    <div className={`relative flex h-full flex-col ${previewMode ? "justify-center items-center" : "justify-between"}`}>
       <div
         className="relative overflow-hidden"
         style={previewMode ? {} : {

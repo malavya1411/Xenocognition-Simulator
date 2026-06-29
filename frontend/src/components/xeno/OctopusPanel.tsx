@@ -1,11 +1,85 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Search, Eye, Swords, Moon, BarChart3, HeartCrack, Hexagon } from "lucide-react";
+import { Shield, Search, Eye, Swords, Moon, BarChart3, HeartCrack, Hexagon, Info, Activity, Radio, Cpu, Network } from "lucide-react";
 import type { OctopusData } from "@/lib/xeno-mock";
 
 const BIAS_ICONS = [Shield, Search, Eye, Swords, Moon, BarChart3, HeartCrack, Hexagon];
 
-// Cubic Bezier Y-math helper
+const LOBE_DIAGNOSTICS = [
+  {
+    bias: "defensive",
+    thought: "Shielding synaptic routes from external noise probes",
+    confidence: 94,
+    signal: 88,
+    memories: "Chamber [04] thermal lockouts",
+    priority: "HIGH",
+    color: "#00E5FF", // Cyan
+  },
+  {
+    bias: "curious",
+    thought: "Probing higher dimensional concept vectors",
+    confidence: 89,
+    signal: 92,
+    memories: "Unknown light polarization patterns",
+    priority: "MAXIMIZE",
+    color: "#8B5CF6", // Purple
+  },
+  {
+    bias: "sensual",
+    thought: "Tracing pressure gradient dynamics in limb filaments",
+    confidence: 96,
+    signal: 85,
+    memories: "Thermal vent currents, 4.2C shift",
+    priority: "NORMAL",
+    color: "#3DDCFF", // Blue
+  },
+  {
+    bias: "predatory",
+    thought: "Targeting cognitive loops for memory resource harvesting",
+    confidence: 91,
+    signal: 90,
+    memories: "Deconstructed mesh logic sequences",
+    priority: "IMMEDIATE",
+    color: "#FF4D6D", // Danger red
+  },
+  {
+    bias: "playful",
+    thought: "Oscillating frequencies to trigger consensus jitter",
+    confidence: 78,
+    signal: 82,
+    memories: "Chaotic feedback resonance experiments",
+    priority: "LOW",
+    color: "#FFC857", // Yellow
+  },
+  {
+    bias: "skeptical",
+    thought: "Auditing consensus validity of current decision vectors",
+    confidence: 98,
+    signal: 95,
+    memories: "Prior consensus decay logs",
+    priority: "CRITICAL",
+    color: "#00FFB2", // Success Green
+  },
+  {
+    bias: "memory",
+    thought: "Reconstructing spatial mapping vectors from last dive",
+    confidence: 92,
+    signal: 87,
+    memories: "Consensus matrix index 4429",
+    priority: "HIGH",
+    color: "#00E5FF", // Cyan
+  },
+  {
+    bias: "color-drunk",
+    thought: "Saturating chromatophore nodes with bioluminescent bursts",
+    confidence: 84,
+    signal: 89,
+    memories: "Bioluminescent flash reference array",
+    priority: "STIMULATE",
+    color: "#8B5CF6", // Purple
+  },
+];
+
 function getCubicBezierPoint(
   t: number,
   x0: number, y0: number,
@@ -25,7 +99,16 @@ function getCubicBezierPoint(
   };
 }
 
-export function OctopusPanel({ data, loading, previewMode = false }: { data: OctopusData | null; loading: boolean; previewMode?: boolean }) {
+export function OctopusPanel({
+  data,
+  loading,
+  previewMode = false,
+}: {
+  data: OctopusData | null;
+  loading: boolean;
+  previewMode?: boolean;
+}) {
+  const [hoveredNode, setHoveredNode] = useState<number | null>(null);
   const [active, setActive] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -33,24 +116,24 @@ export function OctopusPanel({ data, loading, previewMode = false }: { data: Oct
   const eyeOffset = useRef({ x: 0, y: 0 });
   const isBlinking = useRef(false);
 
-  // SVG-based width/height for layout tracking
-  const W = 360;
-  const H = 340;
+  // SVG-based dimensions
+  const W = 460;
+  const H = 420;
   const cx = W / 2;
-  const cy = 170; // Mantle center (centered vertically)
+  const cy = H / 2;
 
-  // Eye tracking & Blinking listeners
+  // Eye tracking mouse movement
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const eyeX = rect.left + rect.width / 2;
-      const eyeY = rect.top + (cy / H) * rect.height;
+      const eyeY = rect.top + rect.height / 2;
 
       const dx = e.clientX - eyeX;
       const dy = e.clientY - eyeY;
       const angle = Math.atan2(dy, dx);
-      const dist = Math.min(3.5, Math.hypot(dx, dy) / 45); // Max offset 3.5px
+      const dist = Math.min(6, Math.hypot(dx, dy) / 60);
 
       eyeOffset.current = {
         x: Math.cos(angle) * dist,
@@ -63,9 +146,9 @@ export function OctopusPanel({ data, loading, previewMode = false }: { data: Oct
         isBlinking.current = true;
         setTimeout(() => {
           isBlinking.current = false;
-        }, 150);
+        }, 180);
       }
-    }, 4500);
+    }, 4000);
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => {
@@ -76,7 +159,6 @@ export function OctopusPanel({ data, loading, previewMode = false }: { data: Oct
 
   // Main Canvas Render Loop
   useEffect(() => {
-    if (loading || !data) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
@@ -88,72 +170,97 @@ export function OctopusPanel({ data, loading, previewMode = false }: { data: Oct
     ctx.scale(scale, scale);
 
     const draw = () => {
-      // 1. Clear with deep ocean abyss gradient
-      ctx.fillStyle = "rgba(7, 9, 30, 0.25)"; // transparent overlay trail
+      // 1. Clear background
+      ctx.fillStyle = "rgba(5, 7, 11, 0.22)"; // Trail fade for glowing plasma
       ctx.fillRect(0, 0, W, H);
 
       const time = Date.now() * 0.001;
 
-      // Draw subtle drifting plankton dots
-      ctx.fillStyle = "rgba(0, 240, 255, 0.15)";
-      for (let p = 0; p < 12; p++) {
-        const px = (Math.sin(time * 0.5 + p * 4) * 0.5 + 0.5) * W;
-        const py = ((time * 20 + p * 35) % H);
+      // Draw subtle orbital rings around core
+      ctx.strokeStyle = "rgba(0, 229, 255, 0.05)";
+      ctx.lineWidth = 1;
+      
+      // Orbit 1: Inner
+      ctx.beginPath();
+      ctx.arc(cx, cy, 60, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Orbit 2: Middle (Dashed spinning)
+      ctx.strokeStyle = "rgba(139, 92, 246, 0.08)";
+      ctx.setLineDash([8, 12]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, 110, time * 0.2, time * 0.2 + Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]); // Reset
+
+      // Orbit 3: Outer
+      ctx.strokeStyle = "rgba(0, 229, 255, 0.03)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 160, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Draw floating data particles in visualization area
+      ctx.fillStyle = "rgba(0, 229, 255, 0.12)";
+      for (let p = 0; p < 8; p++) {
+        const angleOffset = p * (Math.PI / 4);
+        const radius = 90 + Math.sin(time + p) * 20;
+        const px = cx + Math.cos(time * 0.3 + angleOffset) * radius;
+        const py = cy + Math.sin(time * 0.3 + angleOffset) * radius;
         ctx.beginPath();
         ctx.arc(px, py, 1.2, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Draw light rays from the top
-      ctx.fillStyle = "rgba(0, 240, 255, 0.02)";
-      ctx.beginPath();
-      ctx.moveTo(cx - 30 + Math.sin(time * 0.4) * 20, 0);
-      ctx.lineTo(cx + 40 + Math.sin(time * 0.4) * 20, 0);
-      ctx.lineTo(cx + 120 + Math.cos(time * 0.3) * 30, H);
-      ctx.lineTo(cx - 100 + Math.cos(time * 0.3) * 30, H);
-      ctx.closePath();
-      ctx.fill();
+      // Volumetric breathing effect
+      const breathe = Math.sin(time * 0.9) * 4;
+      const mantleY = cy + breathe;
 
-      // Mantle vertical float
-      const mantleY = cy + Math.sin(time * 0.8) * 5;
+      const tentaclePoints: {
+        bx: number;
+        by: number;
+        cp1x: number;
+        cp1y: number;
+        cp2x: number;
+        cp2y: number;
+        ex: number;
+        ey: number;
+      }[] = [];
 
-      // 2. Pre-calculate dynamic tentacle coordinates
-      const tentaclePoints: { bx: number; by: number; cp1x: number; cp1y: number; cp2x: number; cp2y: number; ex: number; ey: number }[] = [];
-
+      // 2. Precompute and draw Webbing and Tentacles
       for (let i = 0; i < 8; i++) {
-        const angle = (i / 8) * Math.PI * 2;
-        const r = 114 + (i % 2) * 8;
-        
-        // Swaying endpoints
-        const ex = cx + Math.cos(angle) * r + Math.sin(time * 1.1 + i * 2.5) * 12;
-        const ey = mantleY + Math.sin(angle) * r + Math.cos(time * 1.1 + i * 2.5) * 12;
+        const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
+        const r = 160 + (i % 2 === 0 ? 15 : 0) + Math.sin(time * 1.5 + i * 2) * 5;
 
-        // Base point around mantle boundary
-        const bx = cx + Math.cos(angle) * 18;
-        const by = mantleY + Math.sin(angle) * 22;
+        // Swelling endpoint coordinates
+        const ex = cx + Math.cos(angle) * r + Math.sin(time * 0.8 + i * 1.5) * 10;
+        const ey = cy + Math.sin(angle) * r + Math.cos(time * 0.8 + i * 1.5) * 10;
 
-        // Organic Bezier controls
-        const cp1x = cx + Math.cos(angle) * 55 + Math.sin(time * 0.9 + i) * 12;
-        const cp1y = mantleY + Math.sin(angle) * 55 + Math.cos(time * 0.9 + i) * 12;
+        // Base points around mantle
+        const bx = cx + Math.cos(angle) * 22;
+        const by = mantleY + Math.sin(angle) * 26;
 
-        const cp2x = ex - Math.cos(angle) * 35 + Math.cos(time * 1.3 + i * 2) * 15;
-        const cp2y = ey - Math.sin(angle) * 35 + Math.sin(time * 1.3 + i * 2) * 15;
+        // Cybernetic control vectors for spline shapes
+        const cp1x = cx + Math.cos(angle) * 75 + Math.sin(time + i) * 15;
+        const cp1y = cy + Math.sin(angle) * 75 + Math.cos(time + i) * 15;
+
+        const cp2x = ex - Math.cos(angle) * 50 + Math.cos(time * 1.2 + i * 3) * 12;
+        const cp2y = ey - Math.sin(angle) * 50 + Math.sin(time * 1.2 + i * 3) * 12;
 
         tentaclePoints.push({ bx, by, cp1x, cp1y, cp2x, cp2y, ex, ey });
 
-        // Fast DOM updates for absolute positioned icon tips
+        // Update DOM ref positions for HTML absolute overlays
         const tipEl = tipRefs.current[i];
         if (tipEl) {
           tipEl.style.transform = `translate(${ex}px, ${ey}px) translate(-50%, -50%)`;
         }
       }
 
-      // 3. Draw Webbing between tentacles
-      ctx.fillStyle = "rgba(0, 240, 255, 0.04)";
+      // Draw webbing matrix translucent layer
+      ctx.fillStyle = "rgba(0, 229, 255, 0.035)";
       ctx.beginPath();
       for (let i = 0; i < 8; i++) {
         const pt = tentaclePoints[i];
-        const midT = getCubicBezierPoint(0.22, pt.bx, pt.by, pt.cp1x, pt.cp1y, pt.cp2x, pt.cp2y, pt.ex, pt.ey);
+        const midT = getCubicBezierPoint(0.25, pt.bx, pt.by, pt.cp1x, pt.cp1y, pt.cp2x, pt.cp2y, pt.ex, pt.ey);
         if (i === 0) {
           ctx.moveTo(midT.x, midT.y);
         } else {
@@ -163,151 +270,161 @@ export function OctopusPanel({ data, loading, previewMode = false }: { data: Oct
       ctx.closePath();
       ctx.fill();
 
-      // 4. Draw Volumetric Tapered Tentacles
+      // 3. Draw plasma lines & limbs
       for (let i = 0; i < 8; i++) {
         const pt = tentaclePoints[i];
+        const isHovered = hoveredNode === i;
         const isActive = active === i;
+        const diag = LOBE_DIAGNOSTICS[i];
 
-        // Draw segments to create thickness & taper
-        const slices = 30;
+        // Core tentacle stem drawing using slices
+        const slices = 32;
         for (let s = 0; s <= slices; s++) {
           const t = s / slices;
           const pos = getCubicBezierPoint(t, pt.bx, pt.by, pt.cp1x, pt.cp1y, pt.cp2x, pt.cp2y, pt.ex, pt.ey);
-          
-          // Width decreases along the tentacle
-          const width = (isActive ? 12 : 9.5) * (1 - t * 0.78);
-          
-          // 3D Shading gradient
-          const grad = ctx.createRadialGradient(
-            pos.x - width * 0.15, pos.y - width * 0.15, 0.5,
-            pos.x, pos.y, width
+          const radius = (isHovered || isActive ? 14 : 11) * (1 - t * 0.78);
+
+          // 3D holographic radial gradient fill
+          const radialGrad = ctx.createRadialGradient(
+            pos.x - radius * 0.18, pos.y - radius * 0.18, 0.5,
+            pos.x, pos.y, radius
           );
-          
-          if (isActive) {
-            grad.addColorStop(0, "rgba(255, 255, 255, 0.95)");
-            grad.addColorStop(0.3, "#00f0ff"); // bioluminescent cyan
-            grad.addColorStop(1, "#8b5cf6"); // purple
+
+          if (isHovered || isActive) {
+            radialGrad.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+            radialGrad.addColorStop(0.35, diag.color);
+            radialGrad.addColorStop(0.9, "#0B1020");
+            radialGrad.addColorStop(1, "rgba(0, 229, 255, 0.05)");
           } else {
-            grad.addColorStop(0, "rgba(0, 240, 255, 0.55)");
-            grad.addColorStop(0.4, "rgba(7, 10, 48, 0.9)");
-            grad.addColorStop(1, "rgba(139, 92, 246, 0.15)");
+            radialGrad.addColorStop(0, "rgba(0, 229, 255, 0.45)");
+            radialGrad.addColorStop(0.4, "rgba(11, 16, 32, 0.85)");
+            radialGrad.addColorStop(1, "rgba(139, 92, 246, 0.08)");
           }
 
-          ctx.fillStyle = grad;
+          ctx.fillStyle = radialGrad;
           ctx.beginPath();
-          ctx.arc(pos.x, pos.y, width, 0, Math.PI * 2);
+          ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
           ctx.fill();
 
-          // Draw double row of suction cups
-          if (s > 4 && s % 3 === 0) {
+          // Draw neon bioluminescent double-suction nodes
+          if (s > 3 && s % 4 === 0) {
             const nextT = Math.min(1, t + 0.02);
             const nextPos = getCubicBezierPoint(nextT, pt.bx, pt.by, pt.cp1x, pt.cp1y, pt.cp2x, pt.cp2y, pt.ex, pt.ey);
             const dx = nextPos.x - pos.x;
             const dy = nextPos.y - pos.y;
-            const len = Math.hypot(dx, dy);
+            const len = Math.hypot(dx, dy) || 1;
             const nx = -dy / len;
             const ny = dx / len;
 
-            const cupSize = 1.6 + (1 - t) * 1.5;
-            ctx.fillStyle = isActive ? "#ec4899" : "rgba(0, 240, 255, 0.8)";
+            const cupSize = 1.8 + (1 - t) * 1.8;
+            ctx.fillStyle = isHovered || isActive ? "#00FFB2" : "rgba(139, 92, 246, 0.6)";
             
             ctx.beginPath();
-            ctx.arc(pos.x + nx * width, pos.y + ny * width, cupSize, 0, Math.PI * 2);
+            ctx.arc(pos.x + nx * radius, pos.y + ny * radius, cupSize, 0, Math.PI * 2);
             ctx.fill();
-            
+
             ctx.beginPath();
-            ctx.arc(pos.x - nx * width, pos.y - ny * width, cupSize, 0, Math.PI * 2);
+            ctx.arc(pos.x - nx * radius, pos.y - ny * radius, cupSize, 0, Math.PI * 2);
             ctx.fill();
           }
         }
 
-        // 5. Neural pulse travel
-        const pulseT = (time * 0.4 + i * 0.12) % 1;
-        const pulsePos = getCubicBezierPoint(pulseT, pt.bx, pt.by, pt.cp1x, pt.cp1y, pt.cp2x, pt.cp2y, pt.ex, pt.ey);
-        const pulseWidth = 5 * (1 - pulseT * 0.6);
+        // Draw flowing plasma signals traveling out to limbs (multiple pulses)
+        const pulseCount = 2;
+        for (let pIdx = 0; pIdx < pulseCount; pIdx++) {
+          const pulseT = ((time * (0.35 + pIdx * 0.1)) + i * 0.125 + (pIdx * 0.5)) % 1;
+          const pPos = getCubicBezierPoint(pulseT, pt.bx, pt.by, pt.cp1x, pt.cp1y, pt.cp2x, pt.cp2y, pt.ex, pt.ey);
+          const pRadius = 3.5 * (1 - pulseT * 0.5);
 
-        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-        ctx.shadowColor = "#ec4899"; // pink highlight
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.arc(pulsePos.x, pulsePos.y, pulseWidth, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0; // reset
+          ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+          ctx.shadowColor = diag.color;
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(pPos.x, pPos.y, pRadius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0; // reset
+        }
       }
 
-      // 6. Draw Volumetric Bulbous Mantle (Head)
-      const headRadiusX = 40;
-      const headRadiusY = 48;
-      
+      // 4. Draw Central Lobe Mantle (Brain Core)
+      const headRx = 46;
+      const headRy = 54;
       const mantleGrad = ctx.createRadialGradient(
-        cx - 6, mantleY - 10, 4,
-        cx, mantleY, 48
+        cx - 6, mantleY - 14, 4,
+        cx, mantleY, 56
       );
-      mantleGrad.addColorStop(0, "rgba(0, 240, 255, 0.35)");
-      mantleGrad.addColorStop(0.5, "#0b0c16");
-      mantleGrad.addColorStop(1, "rgba(139, 92, 246, 0.45)");
+      mantleGrad.addColorStop(0, "rgba(0, 229, 255, 0.45)");
+      mantleGrad.addColorStop(0.4, "#0B1020");
+      mantleGrad.addColorStop(1, "rgba(139, 92, 246, 0.35)");
 
       ctx.fillStyle = mantleGrad;
-      ctx.strokeStyle = "#00f0ff"; // bioluminescent cyan
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(0, 229, 255, 0.6)";
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = "rgba(0, 229, 255, 0.35)";
+      ctx.shadowBlur = 15;
       ctx.beginPath();
-      ctx.ellipse(cx, mantleY, headRadiusX, headRadiusY, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, mantleY, headRx, headRy, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
+      ctx.shadowBlur = 0; // reset
 
-      // Chromatophores
-      ctx.fillStyle = "rgba(0, 240, 255, 0.4)";
-      for (let s = 0; s < 8; s++) {
-        const spotX = cx + Math.sin(s * 1.5) * 22;
-        const spotY = mantleY - 24 + s * 5;
-        const spotRadius = (Math.sin(time * 2 + s) * 0.5 + 0.5) * 2 + 1;
+      // Draw bioluminescent dots (chromatophores pulsing)
+      for (let s = 0; s < 10; s++) {
+        const spotX = cx + Math.sin(s * 1.8) * 26;
+        const spotY = mantleY - 30 + s * 6;
+        const pulseRadius = (Math.sin(time * 3.5 + s) * 0.5 + 0.5) * 1.8 + 1;
+        ctx.fillStyle = s % 2 === 0 ? "#00E5FF" : "#8B5CF6";
         ctx.beginPath();
-        ctx.arc(spotX, spotY, spotRadius, 0, Math.PI * 2);
+        ctx.arc(spotX, spotY, pulseRadius, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // 7. Draw Blinking/Tracking Eye
+      // 5. Draw Blinking / Tracking Eye
       const eyeX = cx;
-      const eyeY = mantleY - 4;
-      const outerEyeRadius = 14;
+      const eyeY = mantleY - 6;
+      const eyeR = 15;
 
-      ctx.fillStyle = "#07080f";
-      ctx.strokeStyle = "rgba(0, 240, 255, 0.7)";
+      ctx.fillStyle = "#05070B";
+      ctx.strokeStyle = "rgba(0, 229, 255, 0.4)";
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(eyeX, eyeY, outerEyeRadius, 0, Math.PI * 2);
+      ctx.arc(eyeX, eyeY, eyeR, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
       if (!isBlinking.current) {
         const irisGrad = ctx.createRadialGradient(
           eyeX + eyeOffset.current.x, eyeY + eyeOffset.current.y, 1,
-          eyeX + eyeOffset.current.x, eyeY + eyeOffset.current.y, 9
+          eyeX + eyeOffset.current.x, eyeY + eyeOffset.current.y, 10
         );
-        irisGrad.addColorStop(0, "rgba(255, 255, 255, 0.95)");
-        irisGrad.addColorStop(0.4, active !== null && active >= 0 ? "#ec4899" : "#00f0ff");
-        irisGrad.addColorStop(1, "#07080f");
+        irisGrad.addColorStop(0, "#ffffff");
+        irisGrad.addColorStop(0.3, "#00E5FF");
+        irisGrad.addColorStop(0.7, "#8B5CF6");
+        irisGrad.addColorStop(1, "#05070B");
 
         ctx.fillStyle = irisGrad;
         ctx.beginPath();
-        ctx.arc(eyeX + eyeOffset.current.x, eyeY + eyeOffset.current.y, 9, 0, Math.PI * 2);
+        ctx.arc(eyeX + eyeOffset.current.x, eyeY + eyeOffset.current.y, 10, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = "#020306";
+        // Slit pupil (alien)
+        ctx.fillStyle = "#05070B";
         ctx.beginPath();
-        ctx.ellipse(eyeX + eyeOffset.current.x, eyeY + eyeOffset.current.y, 6.5, 1.8, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeX + eyeOffset.current.x, eyeY + eyeOffset.current.y, 7, 2.2, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = "rgba(255,255,255,0.75)";
+        // Spark highlight
+        ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
         ctx.beginPath();
-        ctx.arc(eyeX + eyeOffset.current.x - 3, eyeY + eyeOffset.current.y - 3, 1.5, 0, Math.PI * 2);
+        ctx.arc(eyeX + eyeOffset.current.x - 3.5, eyeY + eyeOffset.current.y - 3.5, 1.8, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        ctx.strokeStyle = "#00f0ff";
-        ctx.lineWidth = 1.8;
+        // Blinked line
+        ctx.strokeStyle = "#00E5FF";
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(eyeX - 10, eyeY);
-        ctx.lineTo(eyeX + 10, eyeY);
+        ctx.moveTo(eyeX - 11, eyeY);
+        ctx.lineTo(eyeX + 11, eyeY);
         ctx.stroke();
       }
 
@@ -316,183 +433,227 @@ export function OctopusPanel({ data, loading, previewMode = false }: { data: Oct
 
     draw();
     return () => cancelAnimationFrame(raf);
-  }, [loading, data, active]);
-
-  const confidence = data?.centralNode.confidence ?? 0.5;
-  const hasConflict = data ? data.armNodes.length >= 2 : false;
+  }, [hoveredNode, active]);
 
   return (
-    <div ref={containerRef} className="flex h-full flex-col justify-between">
-      {/* Immersive Canvas-based Giant Floating Octopus Screen */}
-      <div 
-        className="relative mx-auto overflow-hidden" 
-        style={previewMode ? { width: W, height: H, maxWidth: "100%" } : { width: W, height: H, maxWidth: "100%", background: "#06060c", border: "1.2px solid var(--border-dim)", borderRadius: 10 }}
-      >
-        {data && !loading ? (
-          <canvas ref={canvasRef} className="block w-full h-full" />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <motion.svg width={220} height={220} viewBox="0 0 220 220" className="opacity-80">
-              <ellipse cx="110" cy="110" rx="30" ry="36" fill="none" stroke="var(--accent-octopus)" strokeWidth="1.5" strokeDasharray="3 3" />
-              {Array.from({ length: 8 }).map((_, i) => {
-                const a = (i / 8) * Math.PI * 2;
-                const ex = 110 + Math.cos(a) * 80;
-                const ey = 110 + Math.sin(a) * 80;
-                return (
-                  <motion.path
-                    key={i}
-                    d={`M ${110 + Math.cos(a) * 15},${110 + Math.sin(a) * 18} Q ${110 + Math.cos(a) * 45},${110 + Math.sin(a) * 45} ${ex},${ey}`}
-                    stroke="var(--accent-octopus)"
-                    strokeWidth="1.2"
-                    fill="none"
-                    animate={{ opacity: [0.15, 0.7, 0.15], pathLength: [0.25, 0.95, 0.25] }}
-                    transition={{ duration: 2.2, repeat: Infinity, delay: i * 0.15 }}
-                  />
-                );
-              })}
-            </motion.svg>
-          </div>
-        )}
+    <div
+      ref={containerRef}
+      className="relative flex flex-col justify-center items-center select-none w-full h-full"
+    >
+      {/* Outer spinning dash ring decoration */}
+      <div
+        className="absolute border border-dashed border-[#00E5FF]/10 rounded-full pointer-events-none"
+        style={{
+          width: 380,
+          height: 380,
+          top: "calc(50% - 190px)",
+          left: "calc(50% - 190px)",
+          animation: "spin 90s linear infinite",
+        }}
+      />
 
-        {/* Dynamic interactive tips elements (positioned by requestAnimationFrame loop directly) */}
-        {data && !loading && Array.from({ length: 8 }).map((_, i) => {
+      {/* Main Canvas view */}
+      <div
+        className="relative overflow-visible"
+        style={{ width: W, height: H }}
+      >
+        <canvas ref={canvasRef} className="block w-full h-full rounded-2xl" />
+
+        {/* Floating Holographic Lobe Node Targets */}
+        {Array.from({ length: 8 }).map((_, i) => {
           const Icon = BIAS_ICONS[i];
+          const diag = LOBE_DIAGNOSTICS[i];
+          const isHovered = hoveredNode === i;
           const isActive = active === i;
+
           return (
             <div
-              key={`tip-${i}`}
+              key={`node-${i}`}
               ref={(el) => {
                 tipRefs.current[i] = el;
               }}
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                zIndex: 10,
-                cursor: "pointer",
-              }}
-              onClick={() => setActive(i)}
+              className="absolute z-30 cursor-pointer"
+              style={{ left: 0, top: 0 }}
+              onMouseEnter={() => setHoveredNode(i)}
+              onMouseLeave={() => setHoveredNode(null)}
+              onClick={() => setActive(isActive ? null : i)}
             >
-              {isActive && (
-                <div 
-                  className="absolute inset-0 rounded-full border border-pink-500/80 scale-125 animate-ping"
-                  style={{ width: 28, height: 28, margin: -3 }}
-                />
-              )}
+              {/* Outer pulsing ring when active/hovered */}
+              <AnimatePresence>
+                {(isHovered || isActive) && (
+                  <motion.div
+                    className="absolute -inset-2 rounded-full border border-dashed opacity-80"
+                    style={{ borderColor: diag.color }}
+                    animate={{ rotate: 360, scale: [0.95, 1.05, 0.95] }}
+                    transition={{
+                      rotate: { duration: 8, repeat: Infinity, ease: "linear" },
+                      scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                    }}
+                  />
+                )}
+              </AnimatePresence>
+
+              {/* Core Node circle */}
               <div
                 className="rounded-full flex items-center justify-center transition-all duration-300"
                 style={{
-                  width: isActive ? 28 : 22,
-                  height: isActive ? 28 : 22,
-                  background: isActive ? "var(--elevated)" : "#04040a",
-                  border: `1.5px solid ${isActive ? "var(--accent-octopus)" : "var(--border-glow)"}`,
-                  boxShadow: isActive ? "0 0 15px var(--accent-octopus)" : "none",
-                  color: isActive ? "var(--accent-octopus)" : "var(--text-secondary)",
+                  width: isHovered || isActive ? 34 : 26,
+                  height: isHovered || isActive ? 34 : 26,
+                  background: isHovered || isActive ? "rgba(11, 16, 32, 0.85)" : "#05070B",
+                  border: `1.5px solid ${isHovered || isActive ? diag.color : "rgba(0, 229, 255, 0.25)"}`,
+                  boxShadow: isHovered || isActive ? `0 0 16px ${diag.color}` : "0 0 6px rgba(0,229,255,0.05)",
+                  color: isHovered || isActive ? "#ffffff" : "rgba(61, 220, 255, 0.7)",
                 }}
               >
-                <Icon size={isActive ? 12 : 10} strokeWidth={2.2} />
+                <Icon size={isHovered || isActive ? 15 : 12} strokeWidth={2.2} />
               </div>
+
+              {/* Holographic Diagnostic Tooltip Popup */}
+              <AnimatePresence>
+                {isHovered && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 15, x: "-50%" }}
+                    animate={{ opacity: 1, scale: 1, y: 0, x: "-50%" }}
+                    exit={{ opacity: 0, scale: 0.9, y: 10, x: "-50%" }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="absolute pointer-events-none z-50 glass-sci-fi px-4 py-3 rounded-lg flex flex-col gap-2 min-w-[200px]"
+                    style={{
+                      left: "50%",
+                      bottom: 40,
+                      borderColor: diag.color,
+                      boxShadow: `0 8px 30px -10px rgba(0,0,0,0.9), 0 0 15px -3px ${diag.color}22`,
+                    }}
+                  >
+                    {/* Header */}
+                    <div className="flex justify-between items-center border-b border-[#00E5FF]/10 pb-1">
+                      <span className="font-mono text-[9px] uppercase tracking-wider text-text-secondary flex items-center gap-1">
+                        <Cpu size={10} style={{ color: diag.color }} /> LOBE {i + 1} // {diag.bias}
+                      </span>
+                      <span
+                        className="font-mono text-[9px] uppercase px-1 rounded font-bold"
+                        style={{ color: diag.color, background: `${diag.color}15` }}
+                      >
+                        {diag.priority}
+                      </span>
+                    </div>
+
+                    {/* Content */}
+                    <p className="font-mono text-[10px] text-white leading-relaxed">
+                      &gt; "{diag.thought}"
+                    </p>
+
+                    {/* Telemetry Stats */}
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-1 font-mono text-[8px] text-text-secondary border-t border-[#00E5FF]/5 pt-1.5">
+                      <div className="flex items-center gap-1">
+                        <Activity size={8} className="text-[#00FFB2]" /> Conf: {diag.confidence}%
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Radio size={8} className="text-[#3DDCFF]" /> Sig: {diag.signal}dB
+                      </div>
+                      <div className="col-span-2 mt-0.5 border-t border-[#00E5FF]/5 pt-1 text-[7px] text-text-ghost flex items-center gap-1 truncate">
+                        <Network size={8} /> Mem: {diag.memories}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           );
         })}
 
-        {/* Central Eye click interaction region */}
-        {data && !loading && (
-          <div
-            className="absolute cursor-pointer rounded-full"
-            style={{
-              left: cx - 18,
-              top: cy - 20, // static target centering
-              width: 36,
-              height: 36,
-              zIndex: 15,
-            }}
-            onClick={() => setActive(-1)}
-            title="Consensus Lobe"
-          />
-        )}
-
-        {hasConflict && (
-          <span 
-            className="absolute right-2 top-2 font-mono text-[9px] uppercase tracking-[0.25em] px-2 py-0.5 rounded border border-red-500/20" 
-            style={{ color: "var(--alert)", background: "rgba(239, 68, 68, 0.06)" }}
-          >
-            ◆ neural conflict
-          </span>
-        )}
+        {/* Central Eye target interaction */}
+        <div
+          className="absolute cursor-pointer rounded-full"
+          style={{
+            left: cx - 22,
+            top: cy - 22,
+            width: 44,
+            height: 44,
+            zIndex: 35,
+          }}
+          onClick={() => setActive(active === -1 ? null : -1)}
+          title="Central Core Synthesis"
+        />
       </div>
 
+      {/* Console details panel under the canvas */}
       {!previewMode && (
-        <div
-          className="mt-4 p-4 min-h-[125px] flex flex-col justify-center transition-all duration-500"
-          style={{
-            background: "var(--surface)",
-            border: `1px solid ${active !== null ? "var(--accent-octopus)33" : "var(--border-dim)"}`,
-            borderRadius: 8,
-            boxShadow: active !== null ? "0 0 15px -3px rgba(0, 240, 255, 0.05)" : "none"
-          }}
-        >
+        <div className="w-full max-w-[420px] mt-4 z-20">
           <AnimatePresence mode="wait">
             {active === null && (
-              <motion.p
-                key="guide"
-                initial={{ opacity: 0, y: 3 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -3 }}
-                className="font-mono text-[11px] leading-relaxed text-text-secondary text-center"
-              >
-                [ click the central mantle slit-eye for consensus • click dynamic tentacle tips for independent sensors ]
-              </motion.p>
-            )}
-            {active === -1 && data && (
               <motion.div
-                key="consensus"
-                initial={{ opacity: 0, y: 3 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -3 }}
-                className="space-y-2"
+                key="default-guide"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 0.8, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="glass-sci-fi px-4 py-3 rounded-lg border-[#00E5FF]/10 text-center font-mono text-[10px] text-text-secondary"
               >
-                <div className="flex justify-between items-center border-b border-white/5 pb-1">
-                  <span className="font-mono text-[9.5px] uppercase tracking-widest text-text-ghost">
-                    central body • integration node
-                  </span>
-                  <span 
-                    className="font-mono text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded"
-                    style={{ color: "var(--accent-octopus)", background: "rgba(0, 240, 255, 0.06)" }}
-                  >
-                    confidence: {(confidence * 100).toFixed(0)}%
-                  </span>
-                </div>
-                <p className="font-serif text-base italic text-text-primary leading-relaxed">
-                  "{data.centralNode.response}"
-                </p>
-                <p className="font-mono text-[10.5px] text-text-secondary border-t border-dashed border-white/5 pt-1.5 mt-2 opacity-85">
-                  <span className="text-text-ghost">consensus:</span> {data.consensus}
-                </p>
+                [ SELECT CENTROIDS FOR DIRECT TELEMETRY STREAM & CONNECTIONS ]
               </motion.div>
             )}
-            {active !== null && active >= 0 && data && (
+
+            {active === -1 && data && (
               <motion.div
-                key={`arm-${active}`}
-                initial={{ opacity: 0, y: 3 }}
+                key="central-status"
+                initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -3 }}
-                className="space-y-2"
+                exit={{ opacity: 0, y: -5 }}
+                className="glass-sci-fi px-4 py-3.5 rounded-lg border-[#00E5FF]/30 flex flex-col gap-2"
               >
-                <div className="flex justify-between items-center border-b border-white/5 pb-1">
-                  <span className="font-mono text-[9.5px] uppercase tracking-widest text-text-ghost">
-                    peripheral lobe {active + 1}
+                <div className="flex justify-between items-center border-b border-[#00E5FF]/10 pb-1.5">
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-text-secondary">
+                    CENTRAL INTEGRATION NODE
                   </span>
-                  <span 
-                    className="font-mono text-[9.5px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded"
-                    style={{ color: "var(--accent-octopus-pink)", background: "rgba(236, 72, 153, 0.06)" }}
-                  >
-                    bias: {data.armNodes[active].bias}
+                  <span className="font-mono text-[9px] uppercase text-[#00FFB2] font-semibold flex items-center gap-1">
+                    CONFIDENCE {(data.centralNode.confidence * 100).toFixed(0)}%
                   </span>
                 </div>
-                <p className="font-mono text-[12.5px] text-text-primary leading-relaxed">
-                  {data.armNodes[active].response}
+                <p className="font-mono text-xs text-white italic leading-relaxed">
+                  "{data.centralNode.response}"
                 </p>
+                <div className="font-mono text-[9px] text-[#3DDCFF] border-t border-[#00E5FF]/10 pt-1.5 mt-1">
+                  &gt;&gt; ACTIVE PROCESS: {data.consensus}
+                </div>
+              </motion.div>
+            )}
+
+            {active !== null && active >= 0 && data && (
+              <motion.div
+                key={`lobe-${active}`}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="glass-sci-fi px-4 py-3.5 rounded-lg flex flex-col gap-2"
+                style={{ borderColor: `${LOBE_DIAGNOSTICS[active].color}33` }}
+              >
+                <div className="flex justify-between items-center border-b border-[#00E5FF]/10 pb-1.5">
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-text-secondary">
+                    PERIPHERAL LOBE {active + 1}
+                  </span>
+                  <span
+                    className="font-mono text-[9px] uppercase font-bold px-1.5 py-0.5 rounded"
+                    style={{
+                      color: LOBE_DIAGNOSTICS[active].color,
+                      background: `${LOBE_DIAGNOSTICS[active].color}15`,
+                    }}
+                  >
+                    BIAS: {data.armNodes[active]?.bias || LOBE_DIAGNOSTICS[active].bias}
+                  </span>
+                </div>
+                <p className="font-mono text-xs text-white leading-relaxed">
+                  &gt; "{LOBE_DIAGNOSTICS[active].thought}"
+                </p>
+                <div className="grid grid-cols-3 gap-2 mt-1.5 font-mono text-[9px] text-text-secondary border-t border-[#00E5FF]/10 pt-2">
+                  <div>
+                    CONFIDENCE: <span className="text-white font-bold">{LOBE_DIAGNOSTICS[active].confidence}%</span>
+                  </div>
+                  <div>
+                    SIGNAL: <span className="text-white font-bold">{LOBE_DIAGNOSTICS[active].signal}dB</span>
+                  </div>
+                  <div>
+                    PRIORITY: <span style={{ color: LOBE_DIAGNOSTICS[active].color }} className="font-bold">{LOBE_DIAGNOSTICS[active].priority}</span>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

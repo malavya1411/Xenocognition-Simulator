@@ -70,7 +70,7 @@ export function MeshPanel({ data, loading, previewMode = false }: { data: MeshDa
   }
 
   return (
-    <div className="flex h-full flex-col justify-between">
+    <div className={`flex h-full flex-col ${previewMode ? "justify-center items-center" : "justify-between"}`}>
       {/* Immersive Mesh Viewport */}
       <div className="relative flex-1 flex gap-4">
         <div 

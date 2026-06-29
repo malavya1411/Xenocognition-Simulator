@@ -46,7 +46,7 @@ const ARCH_CHIPS = [
 ];
 
 function LandingPage() {
-  const { user, profile, loading, logout } = useAuth();
+  const { user, profile, loading, logout, loginMockUser } = useAuth();
   const navigate = useNavigate();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [view, setView] = useState<"hero" | "login" | "signup">("hero");
@@ -301,6 +301,18 @@ function LandingPage() {
                       }}
                     >
                       Log In
+                    </button>
+
+                    {/* Developer Sandbox Uplink Bypass */}
+                    <button
+                      id="cta-sandbox"
+                      onClick={() => {
+                        loginMockUser?.();
+                        navigate({ to: "/architectures" });
+                      }}
+                      className="flex items-center gap-2 rounded-full px-7 py-3.5 text-[11px] font-semibold uppercase tracking-[0.18em] transition-all duration-300 cursor-pointer border border-[#00E5FF]/20 text-[#00E5FF] bg-[#00E5FF]/5 hover:bg-[#00E5FF]/10"
+                    >
+                      Enter Sandbox
                     </button>
                   </>
                 )}

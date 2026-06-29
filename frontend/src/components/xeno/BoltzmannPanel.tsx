@@ -156,7 +156,7 @@ export function BoltzmannPanel({
   }
 
   return (
-    <div className="relative flex h-full flex-col justify-between overflow-hidden">
+    <div className={`relative flex h-full flex-col overflow-hidden ${previewMode ? "justify-center items-center" : "justify-between"}`}>
       {/* Dynamic CRT Scanline Glitch Overlay */}
       {!stabilized && (
         <div

@@ -31,6 +31,7 @@ interface AuthContextType {
     email: string;
     password?: string;
   }) => Promise<void>;
+  loginMockUser?: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -48,12 +49,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (docSnap.exists()) {
         setProfile(docSnap.data() as UserProfile);
       } else {
-        // Stop here! Do not automatically create the profile.
-        // Set profile to null so the frontend knows to prompt for details.
         setProfile(null);
       }
     } catch (error) {
-      console.warn("Firestore fetch failed (likely missing rules/permissions). Setting profile to null to trigger setup form:", error);
+      console.warn("Firestore fetch failed. Setting profile to null to trigger setup form:", error);
       setProfile(null);
     }
   };
@@ -77,27 +76,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: profileData.email,
       displayName: profileData.displayName,
       photoURL: user.photoURL,
-      password: profileData.password || "", // Save password if provided
+      password: profileData.password || "",
       createdAt: new Date().toISOString()
     };
 
-    // Run setDoc in the background without awaiting it.
-    // This prevents the UI from getting stuck if the network hangs or rules are locked.
     setDoc(docRef, newProfile).catch((error) => {
-      console.warn("Firestore background write failed (likely missing rules/permissions):", error);
+      console.warn("Firestore background write failed:", error);
     });
     
-    // Set profile state immediately to trigger dashboard redirection
     setProfile(newProfile);
+  };
+
+  const loginMockUser = () => {
+    const mockUser = {
+      uid: "mock-user-id-12345",
+      email: "researcher@xenolab.edu",
+      displayName: "Researcher Vance",
+      photoURL: null,
+      emailVerified: true,
+    } as any;
+    setUser(mockUser);
+    setProfile({
+      uid: "mock-user-id-12345",
+      email: "researcher@xenolab.edu",
+      displayName: "Researcher Vance",
+      photoURL: null,
+      createdAt: new Date().toISOString(),
+    });
+    setLoading(false);
   };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
       if (currentUser) {
+        setUser(currentUser);
         await fetchProfile(currentUser.uid, currentUser);
-      } else {
-        setProfile(null);
       }
       setLoading(false);
     });
@@ -107,14 +120,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     setLoading(true);
-    await fbSignOut(auth);
+    try {
+      await fbSignOut(auth);
+    } catch (e) {
+      console.warn("Firebase signout failed:", e);
+    }
     setUser(null);
     setProfile(null);
     setLoading(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile, saveProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile, saveProfile, loginMockUser }}>
       {children}
     </AuthContext.Provider>
   );
@@ -127,3 +144,4 @@ export const useAuth = () => {
   }
   return context;
 };
+
