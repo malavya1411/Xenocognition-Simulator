@@ -12,7 +12,6 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import {
   AmbientParticles,
-  CustomCursor,
   FilmGrain,
   Vignette,
 } from "@/components/xeno/Atmosphere";
@@ -79,7 +78,6 @@ function LandingPage() {
       <AmbientParticles count={45} activeArch={null} />
       <Vignette />
       <FilmGrain />
-      <CustomCursor />
 
       {/* Nav */}
       <nav

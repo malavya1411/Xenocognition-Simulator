@@ -168,13 +168,7 @@
       color 800ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   body {
-    cursor: none;
     overflow-y: auto;
-  }
-  @media (max-width: 768px) {
-    body {
-      cursor: auto;
-    }
   }
 
   /* Custom thin premium scrollbar */

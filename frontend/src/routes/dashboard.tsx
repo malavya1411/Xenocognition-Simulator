@@ -37,7 +37,6 @@ import {
 } from "@/components/xeno/icons";
 import {
   AmbientParticles,
-  CustomCursor,
   FilmGrain,
   Vignette,
 } from "@/components/xeno/Atmosphere";
@@ -190,7 +189,6 @@ function DashboardComponent() {
       <AmbientParticles count={35} activeArch={activeTab !== "compare" ? activeTab : "default"} />
       <Vignette />
       <FilmGrain />
-      <CustomCursor />
 
       {/* Top progress bar */}
       <AnimatePresence>
