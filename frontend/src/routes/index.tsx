@@ -7,6 +7,7 @@ import {
   Sun,
   LogOut,
   LayoutDashboard,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import {
