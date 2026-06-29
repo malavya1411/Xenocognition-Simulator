@@ -1,7 +1,659 @@
 import React, { useEffect, useRef } from "react";
 import { Cpu } from "lucide-react";
 
-// ─── NeuralWebBackground ─────────────────────────────────────────────────────
+// ─── NeuralPCBBackground ──────────────────────────────────────────────────────
+// Generative Neural-PCB hybrid animation. Three depth layers:
+//   0 – Deep amber backbone (slow, rare signals, ring topology)
+//   1 – Mid cyan / purple active network (cursor-reactive, signal-heavy)
+//   2 – Foreground cursor whiskers (ephemeral white hair-lines)
+//
+// Signal packets travel along organic bezier traces with purpose:
+//   spawn → accelerate → converge at junctions → trigger flares.
+// Uses an object pool of 180 signals to avoid GC stutter.
+
+// ── Internal types ────────────────────────────────────────────────────────────
+
+interface PCBNode {
+  id: number;
+  x: number; y: number;
+  layer: 0 | 1;
+  isConvergence: boolean;
+  phase: number;       // breathing offset
+  traffic: number;     // 0-1, dims→brightens junction pad
+  edgeIds: number[];
+}
+
+interface PCBEdge {
+  id: number;
+  from: number; to: number;
+  layer: 0 | 1;
+  cpx1: number; cpy1: number;  // cubic bezier control points
+  cpx2: number; cpy2: number;
+  phosphor: number;            // 0-1 post-spike glow (decays)
+  color: "cyan" | "purple" | "amber";
+}
+
+interface PCBSignal {
+  active: boolean;
+  edgeId: number;
+  t: number;           // 0-1 position along edge
+  speed: number;
+  dir: 1 | -1;         // 1=forward ghost=-1
+  color: "cyan" | "purple" | "amber" | "ghost" | "spike";
+  alpha: number;
+  isSpike: boolean;
+}
+
+interface PCBCloud {
+  x: number; y: number;
+  r: number; alpha: number;
+  phase: number;
+  vx: number; vy: number;
+}
+
+interface PCBWhisker {
+  x: number; y: number;
+  dx: number; dy: number;
+  alpha: number;
+}
+
+// ── Pure utility functions ────────────────────────────────────────────────────
+
+function pcbHash(a: number, b: number): number {
+  const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+  return v - Math.floor(v);
+}
+
+function pcbBezAt(
+  t: number,
+  p0x: number, p0y: number,
+  p1x: number, p1y: number,
+  p2x: number, p2y: number,
+  p3x: number, p3y: number
+): { x: number; y: number } {
+  const u = 1 - t;
+  return {
+    x: u*u*u*p0x + 3*u*u*t*p1x + 3*u*t*t*p2x + t*t*t*p3x,
+    y: u*u*u*p0y + 3*u*u*t*p1y + 3*u*t*t*p2y + t*t*t*p3y,
+  };
+}
+
+function pcbDist(ax: number, ay: number, bx: number, by: number): number {
+  return Math.sqrt((ax - bx) ** 2 + (ay - by) ** 2);
+}
+
+function sigRGBA(c: PCBSignal["color"], a: number): string {
+  const alpha = a.toFixed(3);
+  switch (c) {
+    case "cyan":   return `rgba(0,240,255,${alpha})`;
+    case "purple": return `rgba(123,97,255,${alpha})`;
+    case "amber":  return `rgba(255,184,0,${alpha})`;
+    case "ghost":  return `rgba(255,40,80,${alpha})`;
+    case "spike":  return `rgba(255,255,255,${alpha})`;
+  }
+}
+
+// ── Network builder ───────────────────────────────────────────────────────────
+
+function pcbBuild(
+  w: number, h: number,
+  nodes: PCBNode[],
+  edges: PCBEdge[],
+  clouds: PCBCloud[]
+) {
+  nodes.length = 0;
+  edges.length = 0;
+  clouds.length = 0;
+
+  let nid = 0;
+  let eid = 0;
+
+  // Helper: push a node
+  const mkNode = (x: number, y: number, layer: 0 | 1, isConvergence: boolean): number => {
+    nodes.push({ id: nid, x, y, layer, isConvergence, phase: Math.random() * Math.PI * 2, traffic: 0, edgeIds: [] });
+    return nid++;
+  };
+
+  // Helper: add organic bezier edge
+  const mkEdge = (from: number, to: number, layer: 0 | 1, color: PCBEdge["color"]) => {
+    const n0 = nodes[from]; const n1 = nodes[to];
+    const dx = n1.x - n0.x; const dy = n1.y - n0.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const px = -dy / len; const py = dx / len;
+    const o1 = (pcbHash(from * 7.3 + eid, to * 2.1) - 0.5) * len * 0.38;
+    const o2 = (pcbHash(from * 3.1, to * 5.7 + eid) - 0.5) * len * 0.38;
+    const e: PCBEdge = {
+      id: eid,
+      from, to, layer,
+      cpx1: n0.x + dx * 0.32 + px * o1, cpy1: n0.y + dy * 0.32 + py * o1,
+      cpx2: n0.x + dx * 0.67 + px * o2, cpy2: n0.y + dy * 0.67 + py * o2,
+      phosphor: 0, color,
+    };
+    edges.push(e);
+    nodes[from].edgeIds.push(eid);
+    nodes[to].edgeIds.push(eid);
+    eid++;
+  };
+
+  // ── Layer 0: Deep amber backbone (9-node distorted ring) ─────────────────
+  const DEEP_N = 9;
+  const deepR = Math.min(w, h) * 0.44;
+  const deepIds: number[] = [];
+  for (let i = 0; i < DEEP_N; i++) {
+    const angle = (i / DEEP_N) * Math.PI * 2;
+    const r = deepR * (0.72 + pcbHash(i * 4.1, i * 1.9) * 0.36);
+    const nx = Math.max(25, Math.min(w - 25, w / 2 + Math.cos(angle) * r * (w > h ? w / h : 1)));
+    const ny = Math.max(25, Math.min(h - 25, h / 2 + Math.sin(angle) * r));
+    deepIds.push(mkNode(nx, ny, 0, false));
+  }
+  // Ring + 3 cross-chords
+  for (let i = 0; i < DEEP_N; i++) mkEdge(deepIds[i], deepIds[(i + 1) % DEEP_N], 0, "amber");
+  mkEdge(deepIds[0], deepIds[4], 0, "amber");
+  mkEdge(deepIds[2], deepIds[6], 0, "amber");
+  mkEdge(deepIds[1], deepIds[7], 0, "amber");
+
+  // ── Layer 1: 5 convergence basins (pentagonal, peripheral) ───────────────
+  // Central 36% of viewport is the "dead zone" – no convergence nodes there
+  const rawBasins = [
+    { x: w * 0.10, y: h * 0.13 },
+    { x: w * 0.89, y: h * 0.11 },
+    { x: w * 0.05, y: h * 0.70 },
+    { x: w * 0.92, y: h * 0.75 },
+    { x: w * 0.50, y: h * 0.91 },
+  ];
+
+  const basinIds: number[] = [];
+  const satsByBasin: number[][] = [];
+
+  for (let b = 0; b < rawBasins.length; b++) {
+    const bp = rawBasins[b];
+    // Perlin-style distort
+    bp.x = Math.max(30, Math.min(w - 30, bp.x + (pcbHash(b * 11.1, b * 3.7) - 0.5) * w * 0.05));
+    bp.y = Math.max(30, Math.min(h - 30, bp.y + (pcbHash(b * 2.3, b * 8.9) - 0.5) * h * 0.05));
+
+    const bid = mkNode(bp.x, bp.y, 1, true);
+    basinIds.push(bid);
+
+    // Synaptic cloud hovering near basin
+    clouds.push({
+      x: bp.x + (Math.random() - 0.5) * 75,
+      y: bp.y + (Math.random() - 0.5) * 75,
+      r: 55 + Math.random() * 65, alpha: 0,
+      phase: Math.random() * Math.PI * 2,
+      vx: (Math.random() - 0.5) * 0.13,
+      vy: (Math.random() - 0.5) * 0.13,
+    });
+
+    // 6-8 satellites per basin
+    const satR = Math.min(w, h) * 0.17;
+    const satCount = 6 + Math.floor(Math.random() * 3);
+    const satIds: number[] = [];
+    for (let s = 0; s < satCount; s++) {
+      const sa = (s / satCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.9;
+      const sr = satR * (0.38 + Math.random() * 0.62);
+      const sx = Math.max(15, Math.min(w - 15, bp.x + Math.cos(sa) * sr));
+      const sy = Math.max(15, Math.min(h - 15, bp.y + Math.sin(sa) * sr));
+      const sid = mkNode(sx, sy, 1, false);
+      satIds.push(sid);
+      mkEdge(sid, bid, 1, Math.random() > 0.45 ? "cyan" : "purple");
+    }
+    // Satellite ring links
+    for (let s = 0; s < satIds.length - 1; s++) {
+      if (Math.random() > 0.42) mkEdge(satIds[s], satIds[s + 1], 1, Math.random() > 0.5 ? "cyan" : "purple");
+    }
+    // Fractal dendrite branch
+    if (satIds.length >= 2) {
+      const pn = nodes[satIds[Math.floor(Math.random() * satIds.length)]];
+      const bx = Math.max(15, Math.min(w - 15, pn.x + (Math.random() - 0.5) * satR * 0.5));
+      const by = Math.max(15, Math.min(h - 15, pn.y + (Math.random() - 0.5) * satR * 0.5));
+      const cid = mkNode(bx, by, 1, false);
+      mkEdge(pn.id, cid, 1, "cyan");
+      satIds.push(cid);
+    }
+    satsByBasin.push(satIds);
+  }
+
+  // Basin inter-spine (recurrent purple memory loops)
+  const interSpine: [number, number][] = [[0,1],[0,2],[1,3],[2,4],[3,4],[0,3],[1,4]];
+  for (const [a, bb] of interSpine) mkEdge(basinIds[a], basinIds[bb], 1, "purple");
+
+  // Cross-layer bridges: deep → nearest mid satellite
+  for (const did of deepIds) {
+    const dn = nodes[did];
+    let nearId = -1; let nearD = Infinity;
+    for (const sats of satsByBasin) {
+      for (const sid of sats) {
+        const d = pcbDist(dn.x, dn.y, nodes[sid].x, nodes[sid].y);
+        if (d < nearD && d < Math.min(w, h) * 0.40) { nearD = d; nearId = sid; }
+      }
+    }
+    if (nearId >= 0 && Math.random() > 0.32) mkEdge(did, nearId, 0, "amber");
+  }
+}
+
+// ── Signal pool helpers ───────────────────────────────────────────────────────
+
+function getIdle(pool: PCBSignal[]): PCBSignal | null {
+  for (const s of pool) { if (!s.active) return s; }
+  return null;
+}
+
+function spawn(
+  pool: PCBSignal[],
+  edgeId: number,
+  color: PCBSignal["color"],
+  isGhost = false,
+  isSpike = false
+): boolean {
+  const s = getIdle(pool);
+  if (!s) return false;
+  s.active = true;
+  s.edgeId = edgeId;
+  s.dir = isGhost ? -1 : 1;
+  s.t = isGhost ? 1.0 : 0.0;
+  s.color = color;
+  s.alpha = isSpike ? 1.0 : 0.6 + Math.random() * 0.38;
+  s.speed = isSpike
+    ? 0.014
+    : color === "amber"
+    ? 0.001 + Math.random() * 0.0013
+    : 0.0028 + Math.random() * 0.0042;
+  s.isSpike = isSpike;
+  return true;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export const NeuralPCBBackground: React.FC = () => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    let w = 0; let h = 0;
+    let rafId = 0;
+
+    // Network state
+    const nodes: PCBNode[] = [];
+    const edges: PCBEdge[] = [];
+    const clouds: PCBCloud[] = [];
+
+    // Pre-filtered layer slices (rebuilt on resize)
+    let midEdges: PCBEdge[] = [];
+    let deepEdges: PCBEdge[] = [];
+
+    // Signal pool (object-pooled, no GC churn)
+    const MAX_SIG = 180;
+    const signals: PCBSignal[] = Array.from({ length: MAX_SIG }, () => ({
+      active: false, edgeId: 0, t: 0, speed: 0.003,
+      dir: 1 as const, color: "cyan" as const, alpha: 1, isSpike: false,
+    }));
+
+    // Cursor whiskers (24 slots)
+    const whiskers: PCBWhisker[] = Array.from({ length: 24 }, () => ({
+      x: 0, y: 0, dx: 0, dy: 0, alpha: 0,
+    }));
+
+    const mouse = { x: -2000, y: -2000 };
+
+    // System pulse
+    let nextPulseAt = performance.now() + 8000 + Math.random() * 4000;
+    let pulseX = -Infinity;
+    let pulseStartT = 0;
+
+    // Spawn throttle
+    let lastSpawnT = 0;
+    let lastWhiskerT = 0;
+
+    // ── Resize / rebuild ────────────────────────────────────────────────────
+    const resize = () => {
+      w = window.innerWidth; h = window.innerHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      canvas.style.width = w + "px"; canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      pcbBuild(w, h, nodes, edges, clouds);
+      midEdges = edges.filter(e => e.layer === 1);
+      deepEdges = edges.filter(e => e.layer === 0);
+      for (const s of signals) s.active = false;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    // ── Event listeners ─────────────────────────────────────────────────────
+    const onMove = (e: MouseEvent) => {
+      const now = performance.now();
+      if (now - lastWhiskerT > 18) {
+        for (let i = 0; i < 3; i++) {
+          const wk = whiskers.find(w => w.alpha <= 0);
+          if (!wk) break;
+          const a = Math.random() * Math.PI * 2;
+          wk.x = e.clientX; wk.y = e.clientY;
+          wk.dx = Math.cos(a) * (18 + Math.random() * 28);
+          wk.dy = Math.sin(a) * (18 + Math.random() * 28);
+          wk.alpha = 0.55 + Math.random() * 0.35;
+        }
+        lastWhiskerT = now;
+      }
+      mouse.x = e.clientX; mouse.y = e.clientY;
+    };
+
+    const onLeave = () => { mouse.x = -2000; mouse.y = -2000; };
+
+    const onClick = (e: MouseEvent) => {
+      // Find nearest convergence node
+      let nearId = -1; let nearD = Infinity;
+      for (const n of nodes) {
+        if (!n.isConvergence) continue;
+        const d = pcbDist(e.clientX, e.clientY, n.x, n.y);
+        if (d < nearD) { nearD = d; nearId = n.id; }
+      }
+      if (nearId < 0) return;
+
+      // Fire spike on all edges of nearest convergence node
+      for (const eid of nodes[nearId].edgeIds) {
+        spawn(signals, eid, "spike", false, true);
+        if (edges[eid]) edges[eid].phosphor = 1.0;
+      }
+
+      // Delayed chain: neighbours of that node fire too
+      setTimeout(() => {
+        for (const eid of nodes[nearId].edgeIds) {
+          const nbId = edges[eid]?.from === nearId ? edges[eid]?.to : edges[eid]?.from;
+          if (nbId == null) continue;
+          for (const neid of nodes[nbId]?.edgeIds ?? []) {
+            if (neid === eid) continue;
+            spawn(signals, neid, "spike", false, true);
+            if (edges[neid]) edges[neid].phosphor = Math.min(1, (edges[neid].phosphor || 0) + 0.65);
+          }
+        }
+      }, 110);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseleave", onLeave);
+    window.addEventListener("click", onClick);
+
+    // ── Spawn helper (called each frame) ────────────────────────────────────
+    const trySpawn = (now: number) => {
+      if (now - lastSpawnT < 72) return;
+      lastSpawnT = now;
+
+      let active = 0;
+      for (const s of signals) { if (s.active) active++; }
+      if (active >= MAX_SIG * 0.88) return;
+
+      // Mid-layer signal
+      if (midEdges.length > 0) {
+        const e = midEdges[Math.floor(Math.random() * midEdges.length)];
+        const isGhost = Math.random() < 0.038;
+        spawn(signals, e.id, isGhost ? "ghost" : (Math.random() > 0.45 ? "cyan" : "purple"), isGhost);
+      }
+
+      // Deep signal (rare)
+      if (Math.random() < 0.11 && deepEdges.length > 0) {
+        const e = deepEdges[Math.floor(Math.random() * deepEdges.length)];
+        spawn(signals, e.id, "amber");
+      }
+
+      // Magnetic pull: spawn toward cursor
+      if (mouse.x > -100) {
+        let nearEdgeId = -1; let nearED = Infinity;
+        for (const e of midEdges) {
+          const n0 = nodes[e.from];
+          const d = pcbDist(mouse.x, mouse.y, n0.x, n0.y);
+          if (d < nearED && d < 210) { nearED = d; nearEdgeId = e.id; }
+        }
+        if (nearEdgeId >= 0 && Math.random() < 0.32) spawn(signals, nearEdgeId, "cyan");
+      }
+    };
+
+    // ── Main animation loop ──────────────────────────────────────────────────
+    const tick = (now: number) => {
+      ctx.clearRect(0, 0, w, h);
+
+      // Deep void background with lighter center (text zone breathing room)
+      const bg = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.72);
+      bg.addColorStop(0, "#0b0b14");
+      bg.addColorStop(1, "#050508");
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, w, h);
+
+      // ── System pulse wave (every 8-12 s, sweeps L→R) ─────────────────────
+      if (now >= nextPulseAt) {
+        pulseX = -w * 0.05;
+        pulseStartT = now;
+        nextPulseAt = now + 8000 + Math.random() * 4000;
+      }
+      let pulseAlpha = 0;
+      if (pulseX > -w * 0.04) {
+        const age = (now - pulseStartT) / 1600;
+        pulseX = age * w * 1.2 - w * 0.05;
+        pulseAlpha = Math.max(0, 1 - age) * 0.22;
+        if (age >= 1) pulseX = -Infinity;
+      }
+
+      // ── Advance signals ───────────────────────────────────────────────────
+      trySpawn(now);
+
+      for (const sig of signals) {
+        if (!sig.active) continue;
+        sig.t += sig.speed * sig.dir;
+
+        if (sig.isSpike) {
+          sig.alpha = Math.max(0, sig.alpha - 0.007);
+          if (sig.alpha <= 0) { sig.active = false; continue; }
+        }
+
+        if (sig.t > 1 || sig.t < 0) {
+          const edge = edges[sig.edgeId];
+          sig.active = false;
+          if (!edge || sig.isSpike) continue;
+
+          const arrivedAt = sig.dir === 1 ? edge.to : edge.from;
+          const nd = nodes[arrivedAt];
+          if (!nd) continue;
+          nd.traffic = Math.min(1, nd.traffic + 0.45);
+
+          // Convergence flare: if high-traffic basin, fire along all connected edges
+          if (nd.isConvergence && nd.traffic > 0.68 && Math.random() < 0.28) {
+            for (const neid of nd.edgeIds.slice(0, 5)) {
+              if (neid === sig.edgeId) continue;
+              spawn(signals, neid, sig.color === "ghost" ? "ghost" : (Math.random() > 0.5 ? "cyan" : "purple"));
+            }
+          }
+        }
+      }
+
+      // Decay traffic & phosphor
+      for (const n of nodes) { if (n.traffic > 0) n.traffic = Math.max(0, n.traffic - 0.004); }
+      for (const e of edges) { if (e.phosphor > 0) e.phosphor = Math.max(0, e.phosphor - 0.005); }
+
+      ctx.globalCompositeOperation = "screen";
+
+      // ── Layer 0: Deep amber backbone traces ───────────────────────────────
+      for (const e of edges) {
+        if (e.layer !== 0) continue;
+        const n0 = nodes[e.from]; const n1 = nodes[e.to];
+        const ph = e.phosphor;
+        const pb = pulseAlpha > 0 && Math.abs(n0.x - pulseX) < 140 ? pulseAlpha : 0;
+
+        // Outer glow
+        ctx.beginPath();
+        ctx.moveTo(n0.x, n0.y);
+        ctx.bezierCurveTo(e.cpx1, e.cpy1, e.cpx2, e.cpy2, n1.x, n1.y);
+        ctx.strokeStyle = `rgba(255,184,0,${0.048 + ph * 0.22 + pb * 0.28})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Sharp inner core
+        ctx.beginPath();
+        ctx.moveTo(n0.x, n0.y);
+        ctx.bezierCurveTo(e.cpx1, e.cpy1, e.cpx2, e.cpy2, n1.x, n1.y);
+        ctx.strokeStyle = `rgba(255,220,140,${0.018 + ph * 0.1 + pb * 0.12})`;
+        ctx.lineWidth = 0.35;
+        ctx.stroke();
+      }
+
+      // ── Synaptic clouds (diffuse purple volumes) ──────────────────────────
+      for (const cl of clouds) {
+        cl.x += cl.vx; cl.y += cl.vy;
+        cl.phase += 0.0038;
+        cl.alpha = 0.038 + Math.sin(cl.phase) * 0.022;
+
+        // Dissipate when signals pass through
+        for (const sig of signals) {
+          if (!sig.active) continue;
+          const edge = edges[sig.edgeId];
+          if (!edge) continue;
+          const n0 = nodes[edge.from]; const n1 = nodes[edge.to];
+          const pos = pcbBezAt(sig.t, n0.x, n0.y, edge.cpx1, edge.cpy1, edge.cpx2, edge.cpy2, n1.x, n1.y);
+          if (pcbDist(pos.x, pos.y, cl.x, cl.y) < cl.r * 0.55) cl.alpha *= 0.9;
+        }
+
+        const cg = ctx.createRadialGradient(cl.x, cl.y, 0, cl.x, cl.y, cl.r);
+        cg.addColorStop(0, `rgba(123,97,255,${cl.alpha})`);
+        cg.addColorStop(1, "rgba(123,97,255,0)");
+        ctx.fillStyle = cg;
+        ctx.beginPath();
+        ctx.arc(cl.x, cl.y, cl.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ── Layer 1: Mid cyan / purple active network ─────────────────────────
+      for (const e of edges) {
+        if (e.layer !== 1) continue;
+        const n0 = nodes[e.from]; const n1 = nodes[e.to];
+        const ph = e.phosphor;
+        const pb = pulseAlpha > 0 && Math.abs(n0.x - pulseX) < 110 ? pulseAlpha : 0;
+        const mD = Math.min(pcbDist(mouse.x, mouse.y, n0.x, n0.y), pcbDist(mouse.x, mouse.y, n1.x, n1.y));
+        const mB = Math.max(0, 1 - mD / 230) * 0.22;
+
+        const baseA = (e.color === "purple" ? 0.055 : 0.072) + ph * 0.2 + pb * 0.18 + mB;
+
+        // Glow outer
+        ctx.beginPath();
+        ctx.moveTo(n0.x, n0.y);
+        ctx.bezierCurveTo(e.cpx1, e.cpy1, e.cpx2, e.cpy2, n1.x, n1.y);
+        ctx.strokeStyle = e.color === "purple" ? `rgba(123,97,255,${baseA})` : `rgba(0,240,255,${baseA})`;
+        ctx.lineWidth = e.color === "purple" ? 0.85 : 0.95;
+        ctx.stroke();
+
+        // Sharp inner core (60% opacity white-tinted)
+        ctx.beginPath();
+        ctx.moveTo(n0.x, n0.y);
+        ctx.bezierCurveTo(e.cpx1, e.cpy1, e.cpx2, e.cpy2, n1.x, n1.y);
+        ctx.strokeStyle = e.color === "purple"
+          ? `rgba(200,180,255,${0.042 + ph * 0.12 + mB * 0.55})`
+          : `rgba(200,255,255,${0.052 + ph * 0.14 + mB * 0.55})`;
+        ctx.lineWidth = 0.28;
+        ctx.stroke();
+      }
+
+      // ── Signal packets ────────────────────────────────────────────────────
+      for (const sig of signals) {
+        if (!sig.active) continue;
+        const edge = edges[sig.edgeId];
+        if (!edge) continue;
+        const n0 = nodes[edge.from]; const n1 = nodes[edge.to];
+        const pos = pcbBezAt(sig.t, n0.x, n0.y, edge.cpx1, edge.cpy1, edge.cpx2, edge.cpy2, n1.x, n1.y);
+        const r = sig.isSpike ? 3.2 : sig.color === "amber" ? 2.1 : 1.7;
+        const gr = r * 5.5;
+
+        // Radial glow aura
+        const grd = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, gr);
+        grd.addColorStop(0, sigRGBA(sig.color, sig.alpha * 0.72));
+        grd.addColorStop(0.42, sigRGBA(sig.color, sig.alpha * 0.18));
+        grd.addColorStop(1, sigRGBA(sig.color, 0));
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, gr, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Hard core dot
+        ctx.globalAlpha = sig.alpha;
+        ctx.fillStyle = sigRGBA(sig.color, 1);
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      // ── Junction pads (nodes) ─────────────────────────────────────────────
+      const tt = now * 0.001;
+      for (const n of nodes) {
+        const breathe = Math.sin(tt * 1.15 + n.phase) * 0.28 + 0.72;
+        const tg = n.traffic;
+        if (n.isConvergence) {
+          // Convergence basin: large glow pad + ring
+          const r = 7 + tg * 6;
+          const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 3.2);
+          grd.addColorStop(0, `rgba(0,240,255,${(0.28 + tg * 0.55) * breathe})`);
+          grd.addColorStop(0.5, `rgba(0,240,255,${(0.08 + tg * 0.18) * breathe})`);
+          grd.addColorStop(1, "rgba(0,240,255,0)");
+          ctx.fillStyle = grd;
+          ctx.beginPath(); ctx.arc(n.x, n.y, r * 3.2, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = `rgba(0,240,255,${(0.42 + tg * 0.5) * breathe})`;
+          ctx.lineWidth = 0.9;
+          ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.stroke();
+        } else if (n.layer === 1) {
+          const r = 2 + tg * 2.2;
+          const isPurple = n.edgeIds.some(eid => edges[eid]?.color === "purple");
+          ctx.fillStyle = isPurple
+            ? `rgba(123,97,255,${(0.18 + tg * 0.55) * breathe})`
+            : `rgba(0,240,255,${(0.18 + tg * 0.55) * breathe})`;
+          ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fill();
+        } else {
+          const r = 2.4 + tg * 2;
+          ctx.fillStyle = `rgba(255,184,0,${(0.14 + tg * 0.32) * breathe})`;
+          ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+
+      // ── Cursor whiskers (foreground, ephemeral) ───────────────────────────
+      for (const wk of whiskers) {
+        if (wk.alpha <= 0) continue;
+        wk.alpha = Math.max(0, wk.alpha - 0.032);
+        ctx.beginPath();
+        ctx.moveTo(wk.x, wk.y);
+        ctx.lineTo(wk.x + wk.dx * wk.alpha, wk.y + wk.dy * wk.alpha);
+        ctx.strokeStyle = `rgba(255,255,255,${wk.alpha * 0.5})`;
+        ctx.lineWidth = 0.45;
+        ctx.stroke();
+      }
+
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1;
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseleave", onLeave);
+      window.removeEventListener("click", onClick);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="pointer-events-none fixed inset-0"
+      style={{ zIndex: 5 }}
+      aria-hidden
+    />
+  );
+};
+
+
 // Full-screen immersive neural network canvas for the landing page hero.
 // 120 nodes drawn from all 5 architecture accent palettes, connected by faint
 // filament lines, with mouse-proximity glow.

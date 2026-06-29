@@ -14,7 +14,7 @@ import {
   FilmGrain,
   Vignette,
 } from "@/components/xeno/Atmosphere";
-import { NeuralWebBackground } from "@/components/xeno/LandingCanvas";
+import { NeuralPCBBackground } from "@/components/xeno/LandingCanvas";
 import { AuthPanel } from "@/components/xeno/AuthPanel";
 
 export const Route = createFileRoute("/")(({
@@ -84,8 +84,8 @@ function LandingPage() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-base text-text-primary">
 
-      {/* ── Layer 0: Full-screen neural web canvas ── */}
-      <NeuralWebBackground />
+      {/* ── Layer 0: Full-screen neural PCB canvas ── */}
+      <NeuralPCBBackground />
 
       {/* ── Layer 1: Atmospheric overlays ── */}
       <Vignette />
