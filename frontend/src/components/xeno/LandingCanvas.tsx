@@ -1,6 +1,185 @@
 import React, { useEffect, useRef } from "react";
 import { Cpu } from "lucide-react";
 
+// ─── NeuralWebBackground ─────────────────────────────────────────────────────
+// Full-screen immersive neural network canvas for the landing page hero.
+// 120 nodes drawn from all 5 architecture accent palettes, connected by faint
+// filament lines, with mouse-proximity glow.
+
+interface NeuralNode {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  color: string;
+  glowColor: string;
+  alpha: number;
+  pulseOffset: number;
+}
+
+const ARCH_COLORS = [
+  { fill: "#00f0ff", glow: "#00f0ff" }, // octopus cyan
+  { fill: "#ec4899", glow: "#ec4899" }, // octopus pink
+  { fill: "#10b981", glow: "#10b981" }, // mycelium green
+  { fill: "#f59e0b", glow: "#f59e0b" }, // mycelium amber
+  { fill: "#fbbf24", glow: "#fbbf24" }, // hive gold
+  { fill: "#a78bfa", glow: "#a78bfa" }, // boltzmann violet
+  { fill: "#f97316", glow: "#f97316" }, // boltzmann orange
+  { fill: "#22d3ee", glow: "#22d3ee" }, // mesh cyan
+  { fill: "#c084fc", glow: "#c084fc" }, // mesh purple
+];
+
+export const NeuralWebBackground: React.FC = () => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const mouseRef = useRef({ x: -1000, y: -1000 });
+  const nodesRef = useRef<NeuralNode[]>([]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let rafId = 0;
+    let w = 0;
+    let h = 0;
+
+    const resize = () => {
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = w * (window.devicePixelRatio || 1);
+      canvas.height = h * (window.devicePixelRatio || 1);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Build nodes
+    const NODE_COUNT = 120;
+    nodesRef.current = Array.from({ length: NODE_COUNT }, () => {
+      const c = ARCH_COLORS[Math.floor(Math.random() * ARCH_COLORS.length)];
+      return {
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.22,
+        vy: (Math.random() - 0.5) * 0.22,
+        radius: Math.random() * 2.2 + 0.8,
+        color: c.fill,
+        glowColor: c.glow,
+        alpha: Math.random() * 0.5 + 0.25,
+        pulseOffset: Math.random() * Math.PI * 2,
+      };
+    });
+
+    const onMouseMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+    };
+    const onMouseLeave = () => {
+      mouseRef.current = { x: -1000, y: -1000 };
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseleave", onMouseLeave);
+
+    const MAX_DIST = 130;
+    const MOUSE_RADIUS = 180;
+
+    const tick = () => {
+      ctx.clearRect(0, 0, w, h);
+      const t = Date.now() * 0.001;
+      const nodes = nodesRef.current;
+      const mx = mouseRef.current.x;
+      const my = mouseRef.current.y;
+
+      // Move nodes
+      for (const n of nodes) {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < -20) n.x = w + 20;
+        if (n.x > w + 20) n.x = -20;
+        if (n.y < -20) n.y = h + 20;
+        if (n.y > h + 20) n.y = -20;
+      }
+
+      // Draw connections
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < MAX_DIST) {
+            const opacity = (1 - dist / MAX_DIST) * 0.12;
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.strokeStyle = nodes[i].color;
+            ctx.globalAlpha = opacity;
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      // Draw nodes
+      for (const n of nodes) {
+        const dx = n.x - mx;
+        const dy = n.y - my;
+        const distToMouse = Math.sqrt(dx * dx + dy * dy);
+        const mouseInfluence = Math.max(0, 1 - distToMouse / MOUSE_RADIUS);
+        const pulse = Math.sin(t * 1.8 + n.pulseOffset) * 0.15 + 0.85;
+        const r = n.radius * (1 + mouseInfluence * 2.5) * pulse;
+        const alpha = n.alpha * (1 + mouseInfluence * 0.8) * pulse;
+
+        if (mouseInfluence > 0.05) {
+          // Glow ring
+          const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r * 6);
+          grd.addColorStop(0, n.glowColor + "55");
+          grd.addColorStop(1, n.glowColor + "00");
+          ctx.fillStyle = grd;
+          ctx.globalAlpha = mouseInfluence * 0.7;
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, r * 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Core dot
+        ctx.globalAlpha = alpha;
+        ctx.shadowBlur = mouseInfluence > 0.1 ? 12 : 4;
+        ctx.shadowColor = n.glowColor;
+        ctx.fillStyle = n.color;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseleave", onMouseLeave);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="pointer-events-none fixed inset-0"
+      style={{ zIndex: 5 }}
+      aria-hidden
+    />
+  );
+};
+
 type ArchId = "octopus" | "mycelium" | "hive" | "boltzmann" | "mesh";
 
 export const PersonaCanvas: React.FC<{ type: ArchId; hovered: boolean }> = ({ type, hovered }) => {
