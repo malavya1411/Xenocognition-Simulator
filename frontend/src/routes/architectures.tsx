@@ -222,15 +222,15 @@ function ArchitecturesSelection() {
   const renderActiveVisualizer = (id: ArchId) => {
     switch (id) {
       case "octopus":
-        return <OctopusPanel data={OCTOPUS_PREVIEW_DATA as any} loading={false} />;
+        return <OctopusPanel data={OCTOPUS_PREVIEW_DATA as any} loading={false} previewMode={true} />;
       case "mycelium":
-        return <MyceliumPanel data={MYCELIAL_PREVIEW_DATA as any} loading={false} />;
+        return <MyceliumPanel data={MYCELIAL_PREVIEW_DATA as any} loading={false} previewMode={true} />;
       case "hive":
-        return <HivePanel data={HIVE_PREVIEW_DATA as any} loading={false} />;
+        return <HivePanel data={HIVE_PREVIEW_DATA as any} loading={false} previewMode={true} />;
       case "boltzmann":
-        return <BoltzmannPanel data={BOLTZMANN_PREVIEW_DATA as any} loading={false} />;
+        return <BoltzmannPanel data={BOLTZMANN_PREVIEW_DATA as any} loading={false} previewMode={true} />;
       case "mesh":
-        return <MeshPanel data={MESH_PREVIEW_DATA as any} loading={false} />;
+        return <MeshPanel data={MESH_PREVIEW_DATA as any} loading={false} previewMode={true} />;
     }
   };
 
@@ -510,7 +510,7 @@ function ArchitecturesSelection() {
 
           {/* Centered stage for the actual panel visualizer */}
           <div 
-            className="relative overflow-hidden flex items-center justify-center border border-[rgba(255,255,255,0.04)] rounded-xl bg-[#06060c] shadow-[0_0_80px_rgba(0,240,255,0.02)] transition-all duration-300"
+            className="relative overflow-visible flex items-center justify-center transition-all duration-300 transform scale-[1.35] z-20 pointer-events-auto"
             style={{ 
               width: PANEL_WIDTHS[selectedMind.id], 
               height: PANEL_HEIGHTS[selectedMind.id] 

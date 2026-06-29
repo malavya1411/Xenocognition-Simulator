@@ -38,9 +38,11 @@ function ScrambleText({ text, active }: { text: string; active: boolean }) {
 export function BoltzmannPanel({
   data,
   loading,
+  previewMode = false,
 }: {
   data: BoltzmannData | null;
   loading: boolean;
+  previewMode?: boolean;
 }) {
   const [stabilized, setStabilized] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -166,7 +168,7 @@ export function BoltzmannPanel({
       {/* Cosmic Quantum Particle Screen */}
       <div
         className="relative overflow-hidden p-4 min-h-[180px] flex flex-col justify-end"
-        style={{
+        style={previewMode ? {} : {
           background: "#06060c",
           border: "1.2px solid var(--border-dim)",
           borderRadius: 8,
@@ -231,36 +233,38 @@ export function BoltzmannPanel({
       </div>
 
       {/* Control Gauge bar */}
-      <div className="relative mt-4" style={{ zIndex: 2 }}>
-        <div className="mb-1.5 flex justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-text-secondary">
-          <span>Signal-to-Noise Fluctuation</span>
-          <span style={{ color: "var(--accent-boltzmann)" }}>
-            {(data.signalRatio * 100).toFixed(0)}% Coherence
-          </span>
-        </div>
-        <div className="h-[2px] w-full bg-void rounded overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${data.signalRatio * 100}%` }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-            style={{ height: "100%", background: "var(--accent-boltzmann)" }}
-          />
-        </div>
+      {!previewMode && (
+        <div className="relative mt-4" style={{ zIndex: 2 }}>
+          <div className="mb-1.5 flex justify-between font-mono text-[9px] uppercase tracking-[0.2em] text-text-secondary">
+            <span>Signal-to-Noise Fluctuation</span>
+            <span style={{ color: "var(--accent-boltzmann)" }}>
+              {(data.signalRatio * 100).toFixed(0)}% Coherence
+            </span>
+          </div>
+          <div className="h-[2px] w-full bg-void rounded overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${data.signalRatio * 100}%` }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+              style={{ height: "100%", background: "var(--accent-boltzmann)" }}
+            />
+          </div>
 
-        <div className="mt-3 flex justify-between items-center">
-          <button
-            onClick={() => setStabilized((s) => !s)}
-            aria-pressed={stabilized}
-            className="font-mono text-[9px] uppercase tracking-[0.25em] px-2.5 py-1 border border-white/5 rounded hover:bg-white/5 text-text-secondary hover:text-text-primary transition-all"
-          >
-            {stabilized ? "[ release entropy ]" : "[ stabilize signal ]"}
-          </button>
+          <div className="mt-3 flex justify-between items-center">
+            <button
+              onClick={() => setStabilized((s) => !s)}
+              aria-pressed={stabilized}
+              className="font-mono text-[9px] uppercase tracking-[0.25em] px-2.5 py-1 border border-white/5 rounded hover:bg-white/5 text-text-secondary hover:text-text-primary transition-all"
+            >
+              {stabilized ? "[ release entropy ]" : "[ stabilize signal ]"}
+            </button>
 
-          <span className="font-mono text-[9px] text-text-ghost">
-            entropy: {stabilized ? "0.02e" : "0.98e"}
-          </span>
+            <span className="font-mono text-[9px] text-text-ghost">
+              entropy: {stabilized ? "0.02e" : "0.98e"}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

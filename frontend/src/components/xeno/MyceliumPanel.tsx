@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { MyceliumData } from "@/lib/xeno-mock";
 
-export function MyceliumPanel({ data, loading }: { data: MyceliumData | null; loading: boolean }) {
+export function MyceliumPanel({ data, loading, previewMode = false }: { data: MyceliumData | null; loading: boolean; previewMode?: boolean }) {
   const [showLog, setShowLog] = useState(false);
   const [hover, setHover] = useState<string | null>(null);
   const [ambientSpores, setAmbientSpores] = useState<{ id: number; x: number; y: number; size: number; speed: number }[]>([]);
@@ -136,7 +136,7 @@ export function MyceliumPanel({ data, loading }: { data: MyceliumData | null; lo
     <div className="relative flex h-full flex-col justify-between">
       <div
         className="relative overflow-hidden"
-        style={{
+        style={previewMode ? {} : {
           background: "radial-gradient(circle at center, #0f110d 0%, #06070a 100%)",
           border: "1.2px solid var(--border-dim)",
           borderRadius: 10,
@@ -370,38 +370,42 @@ export function MyceliumPanel({ data, loading }: { data: MyceliumData | null; lo
         </svg>
       </div>
 
-      <div className="mt-3 flex items-center justify-between">
-        <p className="font-mono text-[10px] text-text-ghost">
-          › mycelial network: {data.nodes.length} segments • active paths highlighted
-        </p>
-        
-        <button
-          onClick={() => setShowLog((s) => !s)}
-          className="font-mono text-[9px] uppercase tracking-[0.2em] px-2 py-1 border border-white/5 rounded hover:bg-white/5 text-text-secondary hover:text-text-primary transition-all"
-        >
-          [ {showLog ? "hide" : "show"} growth log ]
-        </button>
-      </div>
+      {!previewMode && (
+        <>
+          <div className="mt-3 flex items-center justify-between">
+            <p className="font-mono text-[10px] text-text-ghost">
+              › mycelial network: {data.nodes.length} segments • active paths highlighted
+            </p>
+            
+            <button
+              onClick={() => setShowLog((s) => !s)}
+              className="font-mono text-[9px] uppercase tracking-[0.2em] px-2 py-1 border border-white/5 rounded hover:bg-white/5 text-text-secondary hover:text-text-primary transition-all"
+            >
+              [ {showLog ? "hide" : "show"} growth log ]
+            </button>
+          </div>
 
-      <AnimatePresence>
-        {showLog && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden mt-2"
-          >
-            <ul className="max-h-24 space-y-1.5 overflow-y-auto p-2 font-mono text-[9.5px] text-text-ghost bg-void/50 border border-white/5 rounded">
-              {data.growthLog.map((l, i) => (
-                <li key={i} className="flex gap-2">
-                  <span style={{ color: "var(--accent-mycelium-amber)" }}>›</span>
-                  <span>{l}</span>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <AnimatePresence>
+            {showLog && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden mt-2"
+              >
+                <ul className="max-h-24 space-y-1.5 overflow-y-auto p-2 font-mono text-[9.5px] text-text-ghost bg-void/50 border border-white/5 rounded">
+                  {data.growthLog.map((l, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span style={{ color: "var(--accent-mycelium-amber)" }}>›</span>
+                      <span>{l}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
     </div>
   );
 }

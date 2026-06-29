@@ -4,7 +4,7 @@ import type { MeshData } from "@/lib/xeno-mock";
 
 const ghostColors = ["#cbd5e1", "#fbbf24", "#a78bfa", "#10b981"]; // Silver, Gold, Purple, Green
 
-export function MeshPanel({ data, loading }: { data: MeshData | null; loading: boolean }) {
+export function MeshPanel({ data, loading, previewMode = false }: { data: MeshData | null; loading: boolean; previewMode?: boolean }) {
   const [unmeshed, setUnmeshed] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<number | null>(null);
   const [waveOffset, setWaveOffset] = useState(0);
@@ -75,7 +75,7 @@ export function MeshPanel({ data, loading }: { data: MeshData | null; loading: b
       <div className="relative flex-1 flex gap-4">
         <div 
           className="relative flex-1 overflow-hidden"
-          style={{
+          style={previewMode ? { minHeight: H } : {
             background: "#08090d",
             border: "1.2px solid var(--border-dim)",
             borderRadius: 10,
@@ -243,93 +243,99 @@ export function MeshPanel({ data, loading }: { data: MeshData | null; loading: b
         </div>
 
         {/* Live Tension Wave Meter */}
-        <div className="flex w-12 flex-col items-center justify-between p-2 rounded-lg bg-void border border-white/5">
-          <p className="font-mono text-[8px] uppercase tracking-widest text-text-ghost mb-2">tension</p>
-          
-          <div className="relative w-7 flex-1 border border-white/5 rounded overflow-hidden bg-black/35 flex items-center justify-center">
-            {/* Dynamic Sine-wave liquid render */}
-            <svg width="100%" height="100%" className="absolute inset-0 overflow-visible">
-              <path
-                d={tensionWavePath(data.tensionScore)}
-                fill="none"
-                stroke="var(--accent-mesh-purple)"
-                strokeWidth="1.5"
-                style={{ transform: "translateX(14px)" }}
+        {!previewMode && (
+          <div className="flex w-12 flex-col items-center justify-between p-2 rounded-lg bg-void border border-white/5">
+            <p className="font-mono text-[8px] uppercase tracking-widest text-text-ghost mb-2">tension</p>
+            
+            <div className="relative w-7 flex-1 border border-white/5 rounded overflow-hidden bg-black/35 flex items-center justify-center">
+              {/* Dynamic Sine-wave liquid render */}
+              <svg width="100%" height="100%" className="absolute inset-0 overflow-visible">
+                <path
+                  d={tensionWavePath(data.tensionScore)}
+                  fill="none"
+                  stroke="var(--accent-mesh-purple)"
+                  strokeWidth="1.5"
+                  style={{ transform: "translateX(14px)" }}
+                />
+              </svg>
+
+              {/* Glowing fill overlay */}
+              <div 
+                className="absolute bottom-0 w-full bg-gradient-to-t from-purple-500/20 to-cyan-500/10 border-t border-cyan-500/30"
+                style={{ height: `${data.tensionScore * 100}%`, transition: "height 800ms" }}
               />
-            </svg>
 
-            {/* Glowing fill overlay */}
-            <div 
-              className="absolute bottom-0 w-full bg-gradient-to-t from-purple-500/20 to-cyan-500/10 border-t border-cyan-500/30"
-              style={{ height: `${data.tensionScore * 100}%`, transition: "height 800ms" }}
-            />
+              <span className="relative z-10 font-mono text-[10px] font-bold text-text-primary bg-black/60 px-1 rounded">
+                {data.tensionScore.toFixed(2)}
+              </span>
+            </div>
 
-            <span className="relative z-10 font-mono text-[10px] font-bold text-text-primary bg-black/60 px-1 rounded">
-              {data.tensionScore.toFixed(2)}
-            </span>
+            <p className="mt-2 font-mono text-[7px] text-text-ghost text-center">harmonic index</p>
           </div>
-
-          <p className="mt-2 font-mono text-[7px] text-text-ghost text-center">harmonic index</p>
-        </div>
+        )}
       </div>
 
       {/* Synthesis description box */}
-      <div 
-        className="mt-3 p-3 min-h-[75px] flex flex-col justify-center rounded-lg bg-surface border border-white/5 transition-all duration-300"
-        style={{
-          borderLeft: hoveredNode !== null ? `3px solid ${ghostColors[hoveredNode]}` : "1.2px solid var(--border-dim)"
-        }}
-      >
-        <AnimatePresence mode="wait">
-          {hoveredNode === null ? (
-            <motion.div
-              key="general"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-1"
-            >
-              <p className="font-mono text-[9px] uppercase tracking-widest text-text-ghost">
-                Consensus synthesis
-              </p>
-              <p className="font-serif text-sm italic text-text-primary leading-relaxed">
-                "{data.averageAnswer}"
-              </p>
-            </motion.div>
-          ) : (
-            <motion.div
-              key={`node-${hoveredNode}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="space-y-1"
-            >
-              <p className="font-mono text-[9px] uppercase tracking-widest text-text-ghost flex justify-between">
-                <span>{data.perspectives[hoveredNode].voice} Perspective</span>
-                <span style={{ color: ghostColors[hoveredNode] }}>
-                  Weight: {(data.perspectives[hoveredNode].weight * 100).toFixed(0)}%
-                </span>
-              </p>
-              <p className="font-serif text-sm italic text-text-primary leading-relaxed">
-                "{data.perspectives[hoveredNode].text}"
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      {!previewMode && (
+        <>
+          <div 
+            className="mt-3 p-3 min-h-[75px] flex flex-col justify-center rounded-lg bg-surface border border-white/5 transition-all duration-300"
+            style={{
+              borderLeft: hoveredNode !== null ? `3px solid ${ghostColors[hoveredNode]}` : "1.2px solid var(--border-dim)"
+            }}
+          >
+            <AnimatePresence mode="wait">
+              {hoveredNode === null ? (
+                <motion.div
+                  key="general"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-1"
+                >
+                  <p className="font-mono text-[9px] uppercase tracking-widest text-text-ghost">
+                    Consensus synthesis
+                  </p>
+                  <p className="font-serif text-sm italic text-text-primary leading-relaxed">
+                    "{data.averageAnswer}"
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={`node-${hoveredNode}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-1"
+                >
+                  <p className="font-mono text-[9px] uppercase tracking-widest text-text-ghost flex justify-between">
+                    <span>{data.perspectives[hoveredNode].voice} Perspective</span>
+                    <span style={{ color: ghostColors[hoveredNode] }}>
+                      Weight: {(data.perspectives[hoveredNode].weight * 100).toFixed(0)}%
+                    </span>
+                  </p>
+                  <p className="font-serif text-sm italic text-text-primary leading-relaxed">
+                    "{data.perspectives[hoveredNode].text}"
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-      <div className="mt-3 flex items-center justify-between">
-        <p className="font-mono text-[9.5px] text-text-ghost">
-          › nodes communicate via cybernetic mesh layer
-        </p>
+          <div className="mt-3 flex items-center justify-between">
+            <p className="font-mono text-[9.5px] text-text-ghost">
+              › nodes communicate via cybernetic mesh layer
+            </p>
 
-        <button
-          onClick={() => setUnmeshed((u) => !u)}
-          className="font-mono text-[9px] uppercase tracking-[0.25em] px-2.5 py-1 border border-white/5 rounded hover:bg-white/5 text-text-secondary hover:text-text-primary transition-all"
-        >
-          [ {unmeshed ? "merge mesh" : "extract perspectives"} ]
-        </button>
-      </div>
+            <button
+              onClick={() => setUnmeshed((u) => !u)}
+              className="font-mono text-[9px] uppercase tracking-[0.25em] px-2.5 py-1 border border-white/5 rounded hover:bg-white/5 text-text-secondary hover:text-text-primary transition-all"
+            >
+              [ {unmeshed ? "merge mesh" : "extract perspectives"} ]
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
