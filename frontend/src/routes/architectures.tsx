@@ -161,18 +161,76 @@ function ArchitecturesSelection() {
     mesh: 360,
   };
 
+  // High-fidelity static preview data for radial visualization stages
+  const OCTOPUS_PREVIEW_DATA = {
+    centralNode: { response: "Debating consensus vectors...", confidence: 0.82 },
+    consensus: "Tuning lobe frequencies...",
+    armNodes: Array.from({ length: 8 }, (_, i) => ({
+      id: i,
+      bias: ["defensive", "curious", "sensual", "predatory", "playful", "skeptical", "memory", "color-drunk"][i],
+      response: "Active telemetry sensor listening..."
+    }))
+  };
+
+  const MYCELIAL_PREVIEW_DATA = {
+    nodes: [
+      { id: "root", label: "Root", size: 10, depth: 0 },
+      { id: "a", label: "SPORE A", size: 8, depth: 1 },
+      { id: "b", label: "SPORE B", size: 8, depth: 1 },
+      { id: "c", label: "SPORE C", size: 8, depth: 1 },
+      { id: "d", label: "HYPHA 1", size: 6, depth: 2 },
+      { id: "e", label: "HYPHA 2", size: 6, depth: 2 },
+    ],
+    edges: [
+      { source: "root", target: "a", strength: 0.8 },
+      { source: "root", target: "b", strength: 0.6 },
+      { source: "root", target: "c", strength: 0.7 },
+      { source: "a", target: "d", strength: 0.5 },
+      { source: "b", target: "e", strength: 0.4 },
+    ],
+    growthLog: ["Spore routing active", "Gradient stabilized"],
+  };
+
+  const HIVE_PREVIEW_DATA = {
+    votes: [
+      { cluster: "Affirmative", count: 120, color: "#fbbf24" },
+      { cluster: "Negative", count: 60, color: "#f59e0b" },
+      { cluster: "Abstain", count: 20, color: "#475569" },
+    ],
+    candidateToken: "INTELLIGENCE",
+  };
+
+  const BOLTZMANN_PREVIEW_DATA = {
+    output: [
+      { segment: "THERMODYNAMIC", energy: 0.8, entropy: 0.4, stable: true },
+      { segment: "JITTER", energy: 0.6, entropy: 0.8, stable: false },
+      { segment: "QUANTUM", energy: 0.9, entropy: 0.2, stable: true },
+    ],
+    signalRatio: 0.72,
+  };
+
+  const MESH_PREVIEW_DATA = {
+    tensionScore: 0.42,
+    averageAnswer: "Synthesizing consensus across post-human mesh layers...",
+    perspectives: [
+      { voice: "Mystic", weight: 0.35, text: "Simulation parameters evolving." },
+      { voice: "Pragmatist", weight: 0.45, text: "Systems online and verified." },
+      { voice: "Optimist", weight: 0.20, text: "Interface stable." },
+    ],
+  };
+
   const renderActiveVisualizer = (id: ArchId) => {
     switch (id) {
       case "octopus":
-        return <OctopusPanel data={null} loading={false} />;
+        return <OctopusPanel data={OCTOPUS_PREVIEW_DATA as any} loading={false} />;
       case "mycelium":
-        return <MyceliumPanel data={null} loading={false} />;
+        return <MyceliumPanel data={MYCELIAL_PREVIEW_DATA as any} loading={false} />;
       case "hive":
-        return <HivePanel data={null} loading={false} />;
+        return <HivePanel data={HIVE_PREVIEW_DATA as any} loading={false} />;
       case "boltzmann":
-        return <BoltzmannPanel data={null} loading={false} />;
+        return <BoltzmannPanel data={BOLTZMANN_PREVIEW_DATA as any} loading={false} />;
       case "mesh":
-        return <MeshPanel data={null} loading={false} />;
+        return <MeshPanel data={MESH_PREVIEW_DATA as any} loading={false} />;
     }
   };
 
