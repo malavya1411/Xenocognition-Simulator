@@ -337,3 +337,50 @@
   }
 }
 
+/* ── Landing Page Hero Additions ─────────────────────────────────────────── */
+
+@keyframes neon-border-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 6px rgba(0, 240, 255, 0.3),
+      0 0 18px rgba(0, 240, 255, 0.15),
+      inset 0 0 6px rgba(0, 240, 255, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 0 14px rgba(0, 240, 255, 0.55),
+      0 0 36px rgba(0, 240, 255, 0.28),
+      inset 0 0 10px rgba(0, 240, 255, 0.1);
+  }
+}
+@utility neon-border-pulse {
+  animation: neon-border-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes text-flicker-in {
+  0% { opacity: 0; }
+  5% { opacity: 0.7; }
+  8% { opacity: 0.2; }
+  12% { opacity: 0.9; }
+  16% { opacity: 0.5; }
+  20% { opacity: 1; }
+  100% { opacity: 1; }
+}
+@utility text-flicker-in {
+  animation: text-flicker-in 1.4s ease-out forwards;
+}
+
+@keyframes scan-line-move {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+@utility scan-line-move {
+  animation: scan-line-move 8s linear infinite;
+}
+
+@keyframes arch-chip-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
