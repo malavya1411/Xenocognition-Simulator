@@ -7,7 +7,6 @@ import {
   Sun,
   LogOut,
   LayoutDashboard,
-  Zap,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -137,16 +136,6 @@ function LandingPage() {
 
         {/* Nav right */}
         <div className="flex items-center gap-3">
-          <span
-            className="hidden sm:flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest"
-            style={{ color: "rgba(0,240,255,0.5)" }}
-          >
-            <span
-              className="h-1.5 w-1.5 rounded-full animate-pulse"
-              style={{ background: "#00f0ff" }}
-            />
-            System Online
-          </span>
           <button
             onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
             aria-label="Toggle theme"
@@ -160,7 +149,7 @@ function LandingPage() {
 
       {/* ── MAIN ── */}
       <main
-        className="relative mx-auto max-w-[1200px] px-6 pb-24 pt-20 flex flex-col items-center justify-center min-h-screen"
+        className="relative mx-auto max-w-[1200px] px-6 pb-24 pt-28 flex flex-col items-center justify-center min-h-screen"
         style={{ zIndex: 30 }}
       >
         <AnimatePresence mode="wait">
@@ -175,26 +164,6 @@ function LandingPage() {
               transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-col items-center text-center w-full"
             >
-              {/* Status annotation badge */}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1, duration: 0.6 }}
-                className="mb-8 flex items-center gap-2"
-              >
-                <span
-                  className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 font-mono text-[10px] uppercase tracking-[0.25em]"
-                  style={{
-                    border: "1px solid rgba(0,240,255,0.2)",
-                    background: "rgba(0,240,255,0.04)",
-                    color: "rgba(0,240,255,0.7)",
-                  }}
-                >
-                  <Zap size={9} className="animate-pulse" />
-                  Speculative Neuroscience Lab · Est. 2030
-                </span>
-              </motion.div>
-
               {/* Giant display headline */}
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
@@ -213,19 +182,6 @@ function LandingPage() {
                 <br />
                 Architected.
               </motion.h1>
-
-              {/* Subtitle */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.55, duration: 0.8 }}
-                className="mt-8 max-w-[440px] font-mono text-[11.5px] leading-relaxed tracking-wide"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                Submit any concept and watch five non-human cognitive
-                architectures process it simultaneously.
-                Intelligence is architectural — not universal.
-              </motion.p>
 
               {/* Architecture telemetry chips */}
               <motion.div
