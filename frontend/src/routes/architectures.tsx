@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LogOut, ArrowRight, Zap, Info, Cpu, Play } from "lucide-react";
+import { LogOut, ArrowRight, Zap, Info, Cpu, Play, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { FilmGrain, Vignette } from "@/components/xeno/Atmosphere";
+import { PersonaCanvas } from "@/components/xeno/LandingCanvas";
 import {
   BoltzmannIcon,
   HiveIcon,
@@ -132,6 +133,9 @@ function ArchitecturesSelection() {
   const [selectedId, setSelectedId] = useState<ArchId>("octopus");
   const [hoveredId, setHoveredId] = useState<ArchId | null>(null);
 
+  // Accordion details toggle states
+  const [synthesisExpanded, setSynthesisExpanded] = useState(false);
+
   // Entering transition overlay state
   const [bootingMind, setBootingMind] = useState<ArchId | null>(null);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
@@ -246,7 +250,7 @@ function ArchitecturesSelection() {
 
   return (
     <div
-      className="relative min-h-screen bg-[#0a0a0f] text-text-primary flex flex-col pb-12"
+      className="relative w-screen h-screen bg-[#0a0a0f] text-text-primary flex flex-col overflow-hidden select-none"
       style={{
         backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
                           linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px)`,
@@ -256,57 +260,59 @@ function ArchitecturesSelection() {
       <Vignette />
       <FilmGrain />
 
-      {/* Nav */}
-      <nav
-        className="fixed left-0 right-0 top-0 flex items-center justify-between px-6 border-b border-border-dim"
-        style={{
-          height: 64,
-          zIndex: 40,
-          backdropFilter: "blur(20px)",
-          background: "rgba(10, 10, 15, 0.75)",
-        }}
+      {/* ── Top Bar (48px height) ── */}
+      <header
+        className="relative flex items-center justify-between px-6 border-b border-[rgba(255,255,255,0.06)] bg-[#0a0a0f]"
+        style={{ height: 48, zIndex: 40 }}
       >
-        <div className="flex items-center gap-3">
-          <div className="h-5 w-5 rounded border border-border-glow grid place-items-center bg-surface/30">
-            <div className="h-1.5 w-1.5 rounded-full bg-white" />
-          </div>
-          <span
-            className="font-mono text-[10px] tracking-[0.3em] uppercase"
-            style={{ color: "#ffffff" }}
-          >
+        {/* Left segment */}
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[10px] font-semibold tracking-wider text-[#00f0ff]">
+            // STEP 02 : CHOOSE ALIEN MIND SIMULATOR
+          </span>
+        </div>
+
+        {/* Center segment */}
+        <div className="absolute left-1/2 transform -translate-x-1/2">
+          <span className="font-sans text-[12px] font-bold uppercase tracking-[0.25em] text-white">
             Xenocognition Laboratory
           </span>
         </div>
-        <div className="flex items-center gap-4">
+
+        {/* Right segment */}
+        <div className="flex items-center gap-4 font-mono text-[10px]">
+          <div className="flex items-center gap-1.5 text-white">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#00f0ff] animate-pulse" />
+            SYSTEM ONLINE
+          </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-1.5 rounded border border-border-dim px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all cursor-pointer bg-[#050508] text-[#a0a8b8] hover:text-white hover:border-border-glow"
+            className="text-[#a0a8b8] hover:text-white uppercase transition-colors tracking-wider"
           >
-            <LogOut size={12} /> Disconnect Uplink
+            DISCONNECT UPLINK
           </button>
         </div>
-      </nav>
+      </header>
 
-      {/* Main Split Layout Grid */}
-      <main className="relative mx-auto w-full max-w-[1400px] px-6 pt-24 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-10 z-30">
+      {/* ── Main Three-Zone Dashboard Layout (Remainder of Screen, non-scrolling) ── */}
+      <main className="relative flex-1 flex overflow-hidden w-full max-w-[1920px] mx-auto z-30">
         
-        {/* Left Column: Mind Selector Cards Grid (col-span-7) */}
-        <section className="lg:col-span-7 flex flex-col justify-start">
-          <header className="mb-8">
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.25em] text-[#00f0ff]">
-              // STEP 02 : CHOOSE ALIEN MIND SIMULATOR
-            </span>
-            <h1 className="font-sans text-3xl font-bold uppercase tracking-tight text-white mt-2">
-              Active Cognitive Architectures
-            </h1>
-          </header>
+        {/* ── ZONE A (Left Panel, 25% width) ── */}
+        <section
+          className="w-1/4 h-full flex flex-col border-r border-[rgba(255,255,255,0.06)] bg-[#0a0a0f] overflow-y-auto"
+          style={{ minWidth: 280 }}
+        >
+          <div className="p-5 border-b border-[rgba(255,255,255,0.04)]">
+            <h2 className="font-sans text-[11px] font-bold tracking-widest text-[#a0a8b8] uppercase">
+              Simulation Cores
+            </h2>
+          </div>
 
-          <div className="flex flex-col gap-6">
+          <div className="flex-1 flex flex-col">
             {MIND_PERSONAS.map((mind) => {
               const Icon = mind.icon;
               const isSelected = selectedId === mind.id;
               const isHovered = hoveredId === mind.id;
-              const active = isSelected || isHovered;
 
               return (
                 <div
@@ -314,192 +320,280 @@ function ArchitecturesSelection() {
                   onClick={() => setSelectedId(mind.id)}
                   onMouseEnter={() => setHoveredId(mind.id)}
                   onMouseLeave={() => setHoveredId(null)}
-                  className="relative group rounded-xl p-6 border cursor-pointer select-none transition-all duration-300 flex flex-col min-h-[140px]"
+                  className="relative cursor-pointer transition-all duration-300 border-b border-[rgba(255,255,255,0.04)] flex flex-col overflow-hidden"
                   style={{
-                    background: isSelected ? "rgba(255,255,255,0.03)" : "rgba(14, 14, 25, 0.45)",
-                    borderColor: isSelected
-                      ? "rgba(0, 240, 255, 0.4)"
-                      : isHovered
-                      ? "rgba(255,255,255,0.18)"
-                      : "rgba(255, 255, 255, 0.06)",
-                    boxShadow: isSelected ? "0 0 20px rgba(0, 240, 255, 0.08)" : "none",
+                    background: isSelected ? "rgba(255,255,255,0.03)" : isHovered ? "rgba(255,255,255,0.01)" : "#0a0a0f",
                   }}
                 >
-                  {/* Selected left indicator accent bar */}
+                  {/* Selected Indicator Accent Bar */}
                   {isSelected && (
-                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#00f0ff]" />
+                    <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[#00f0ff]" style={{ zIndex: 10 }} />
                   )}
 
-                  <div className="flex items-center gap-4">
-                    {/* Icon container */}
-                    <div
-                      className="p-2.5 rounded-lg grid place-items-center transition-colors"
+                  {/* Accordion Header State */}
+                  <div className="h-[64px] flex items-center justify-between px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="p-1.5 rounded transition-colors"
+                        style={{
+                          background: isSelected ? `${mind.color}15` : "rgba(255,255,255,0.02)",
+                          color: isSelected || isHovered ? mind.color : "#a0a8b8",
+                        }}
+                      >
+                        <Icon size={16} />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="font-sans text-[13px] font-bold uppercase tracking-wide text-white">
+                          {mind.name}
+                        </h3>
+                        <p className="font-mono text-[9px] uppercase tracking-widest text-[#a0a8b8]">
+                          {mind.tagline.slice(0, 24)}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight
+                      size={12}
+                      className="text-[#00f0ff] transition-transform duration-300"
                       style={{
-                        background: isSelected ? `${mind.color}15` : "rgba(255,255,255,0.02)",
-                        color: active ? mind.color : "#a0a8b8",
-                        border: `1px solid ${active ? mind.color + "40" : "rgba(255,255,255,0.05)"}`,
+                        transform: isSelected ? "rotate(90deg)" : "none",
                       }}
-                    >
-                      <Icon size={18} />
-                    </div>
-
-                    <div>
-                      <h3 className="font-sans text-[17px] font-bold uppercase tracking-wide text-white">
-                        {mind.name}
-                      </h3>
-                      <p className="font-mono text-[11px] uppercase tracking-widest text-[#a0a8b8] mt-0.5">
-                        {mind.tagline}
-                      </p>
-                    </div>
+                    />
                   </div>
 
-                  {/* Body Copy - Full description (No truncation) */}
-                  <p className="font-sans text-[14px] text-[#d0d5e0] leading-[1.6] font-normal mt-4">
-                    {mind.desc}
-                  </p>
+                  {/* Accordion Expanded Body Panel */}
+                  <AnimatePresence initial={false}>
+                    {isSelected && (
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: "auto" }}
+                        exit={{ height: 0 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                        className="overflow-hidden bg-[#0c0c14]/40"
+                      >
+                        <div className="px-5 pb-5 pt-1 text-left flex flex-col gap-3">
+                          {/* Expanded status tag */}
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-[8px] tracking-widest text-text-ghost">
+                              // COGNITIVE CELL
+                            </span>
+                            <span
+                              className="font-mono text-[8px] tracking-wider rounded border px-1.5 py-0.5"
+                              style={{
+                                color: mind.color,
+                                borderColor: `${mind.color}30`,
+                                background: `${mind.color}0a`,
+                              }}
+                            >
+                              ONLINE
+                            </span>
+                          </div>
+                          
+                          {/* Full description text */}
+                          <p className="font-sans text-[12px] text-[#d0d5e0] leading-relaxed font-normal">
+                            {mind.desc}
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}
           </div>
         </section>
 
-        {/* Right Column: Detailed Scientific Profile (col-span-5) */}
-        <section className="lg:col-span-5 flex flex-col h-full">
-          <div className="premium-glass rounded-xl p-6 border border-border-glow flex flex-col justify-between min-h-[640px] sticky top-24">
-            <div>
-              {/* Profile header */}
-              <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-4 mb-6">
-                <div>
-                  <span className="font-mono text-[9px] uppercase tracking-widest text-[#a0a8b8]">
-                    // Cognitive Profile
-                  </span>
-                  <h2 className="font-sans text-2xl font-bold uppercase tracking-wide text-white mt-1">
-                    {selectedMind.name}
-                  </h2>
-                </div>
-                <div
-                  className="h-11 w-11 rounded-full border grid place-items-center"
-                  style={{
-                    borderColor: `${selectedMind.color}30`,
-                    color: selectedMind.color,
-                    background: `${selectedMind.color}0a`,
-                  }}
-                >
-                  <selectedMind.icon size={22} />
-                </div>
-              </div>
+        {/* ── ZONE B (Center Panel, Live Preview Stage, 45% width) ── */}
+        <section className="w-2/5 h-full flex flex-col items-center justify-center border-r border-[rgba(255,255,255,0.06)] bg-[#050508] relative">
+          
+          {/* Subtle static grid underlay mapping coordinates */}
+          <div
+            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{
+              backgroundImage: `radial-gradient(circle, #ffffff 1px, transparent 1px)`,
+              backgroundSize: "24px 24px",
+            }}
+          />
 
-              {/* Sections with dividers */}
-              <div className="space-y-6">
-                {/* 1. Core Identity */}
-                <div>
-                  <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-white mb-3">
-                    CORE IDENTITY
-                  </h4>
-                  <div className="space-y-2.5 font-mono text-[11px]">
-                    <div className="flex justify-between border-b border-[rgba(255,255,255,0.04)] pb-1.5">
-                      <span className="text-[#a0a8b8]">Substrate Layer</span>
-                      <span className="text-white font-semibold text-right">
-                        {selectedMind.substrate}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-b border-[rgba(255,255,255,0.04)] pb-1.5 mt-2">
-                      <span className="text-[#a0a8b8]">Decision Logic</span>
-                      <span className="text-white font-semibold text-right">{selectedMind.logic}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-[rgba(255,255,255,0.04)] pb-1.5 mt-2">
-                      <span className="text-[#a0a8b8]">Processing Rate</span>
-                      <span className="text-[#7b61ff] font-semibold">{selectedMind.speed}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-[1px] bg-[rgba(255,255,255,0.08)]" />
-
-                {/* 2. Cognitive Profile */}
-                <div>
-                  <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-white mb-3">
-                    COGNITIVE PROFILE
-                  </h4>
-                  <div className="space-y-2.5 font-mono text-[11px]">
-                    <div className="flex justify-between border-b border-[rgba(255,255,255,0.04)] pb-1.5">
-                      <span className="text-[#a0a8b8]">Reasoning Style</span>
-                      <span className="text-white font-semibold">{selectedMind.reasoning}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-[rgba(255,255,255,0.04)] pb-1.5 mt-2">
-                      <span className="text-[#a0a8b8]">Communication</span>
-                      <span className="text-white font-semibold">{selectedMind.communication}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="h-[1px] bg-[rgba(255,255,255,0.08)]" />
-
-                {/* 3. Capabilities & Limitations */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#00f0ff] mb-3 flex items-center gap-1.5">
-                      <Zap size={10} /> CAPABILITIES
-                    </h4>
-                    <ul className="space-y-2">
-                      {selectedMind.strengths.map((str, i) => (
-                        <li
-                          key={i}
-                          className="font-sans text-[11px] text-[#d0d5e0] leading-relaxed flex items-start gap-1.5"
-                        >
-                          <span className="text-[#00f0ff] font-extrabold">•</span> {str}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#ffb800] mb-3 flex items-center gap-1.5">
-                      <Info size={10} /> LIMITATIONS
-                    </h4>
-                    <ul className="space-y-2">
-                      {selectedMind.weaknesses.map((wkn, i) => (
-                        <li
-                          key={i}
-                          className="font-sans text-[11px] text-[#d0d5e0] leading-relaxed flex items-start gap-1.5"
-                        >
-                          <span className="text-[#ffb800] font-extrabold">•</span> {wkn}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="h-[1px] bg-[rgba(255,255,255,0.08)]" />
-
-                {/* 4. Sample Neural Trace (Terminal block) */}
-                <div>
-                  <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-white mb-3">
-                    SAMPLE NEURAL TRACE
-                  </h4>
-                  <div
-                    className="p-4 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#050508] font-mono text-[11px] min-h-[85px] flex items-center"
-                  >
-                    {renderTrace(selectedMind.id, selectedMind.thoughtSample)}
-                  </div>
-                </div>
-              </div>
+          {/* Visualization Stage Ring */}
+          <div className="relative w-[340px] h-[340px] flex items-center justify-center border border-[rgba(255,255,255,0.04)] rounded-full bg-[#030306] shadow-[0_0_80px_rgba(0,240,255,0.02)]">
+            
+            {/* The active mind's canvas topology is stretch-fitted into this relative container */}
+            <div className="relative w-[280px] h-[163px] overflow-hidden flex items-center justify-center">
+              <PersonaCanvas type={selectedMind.id} hovered={true} />
             </div>
 
-            {/* Sticky Action Button at panel bottom */}
-            <div className="mt-8 pt-4 border-t border-[rgba(255,255,255,0.08)] flex flex-col items-center">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-[#a0a8b8] mb-3">
-                Link your neural profile to initialize this architecture.
-              </span>
-              <button
-                onClick={() => handleStartSim(selectedId)}
-                className="neon-border-pulse group w-full flex items-center justify-center gap-2 rounded-full py-4 text-xs font-bold uppercase tracking-[0.18em] transition-all duration-300 cursor-pointer shadow-lg bg-[#00f0ff] text-black hover:scale-[1.01]"
-              >
-                Establish Consciousness Link
-                <Play size={12} className="fill-current" />
-              </button>
+            {/* Inner radar details */}
+            <div className="absolute top-4 left-4 font-mono text-[8px] text-text-ghost">
+              GRID: {selectedMind.id.toUpperCase()}_STAGE
+            </div>
+            <div className="absolute bottom-4 right-4 font-mono text-[8px] text-[#00f0ff] animate-pulse">
+              NEURAL FLOW ACTIVE
             </div>
           </div>
+        </section>
+
+        {/* ── ZONE C (Right Panel, Cognitive Profile & Synthesis Panel, 30% width) ── */}
+        <section
+          className="w-7/20 h-full flex flex-col justify-between bg-[#0a0a0f] relative"
+          style={{ minWidth: 320 }}
+        >
+          {/* Scrollable details container */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 pb-36 space-y-6">
+            
+            {/* Section 1: Header info */}
+            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-4">
+              <div>
+                <span className="font-mono text-[8px] uppercase tracking-widest text-[#a0a8b8]">
+                  // Cognitive Profile
+                </span>
+                <h2 className="font-sans text-2xl font-bold uppercase tracking-wide text-white mt-1">
+                  {selectedMind.name}
+                </h2>
+              </div>
+              <div
+                className="h-10 w-10 rounded-full border grid place-items-center"
+                style={{
+                  borderColor: `${selectedMind.color}30`,
+                  color: selectedMind.color,
+                  background: `${selectedMind.color}0a`,
+                }}
+              >
+                <selectedMind.icon size={20} />
+              </div>
+            </div>
+
+            {/* Section 2: Core Identity Metadata Grid */}
+            <div className="space-y-3">
+              <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-white mb-2">
+                Core Identity
+              </h4>
+              <div className="space-y-2 font-mono text-[11px]">
+                <div className="flex justify-between border-b border-[rgba(255,255,255,0.04)] pb-1.5">
+                  <span className="text-[#8a8f98]">Substrate Layer</span>
+                  <span className="text-[#f0f0f5] text-right font-semibold">{selectedMind.substrate}</span>
+                </div>
+                <div className="flex justify-between border-b border-[rgba(255,255,255,0.04)] pb-1.5">
+                  <span className="text-[#8a8f98]">Decision Logic</span>
+                  <span className="text-[#f0f0f5] text-right font-semibold">{selectedMind.logic}</span>
+                </div>
+                <div className="flex justify-between border-b border-[rgba(255,255,255,0.04)] pb-1.5">
+                  <span className="text-[#8a8f98]">Processing Rate</span>
+                  <span className="text-[#7b61ff] font-semibold">{selectedMind.speed}</span>
+                </div>
+                <div className="flex justify-between border-b border-[rgba(255,255,255,0.04)] pb-1.5">
+                  <span className="text-[#8a8f98]">Reasoning Style</span>
+                  <span className="text-[#f0f0f5] font-semibold">{selectedMind.reasoning}</span>
+                </div>
+                <div className="flex justify-between border-b border-[rgba(255,255,255,0.04)] pb-1.5">
+                  <span className="text-[#8a8f98]">Communication</span>
+                  <span className="text-[#f0f0f5] font-semibold">{selectedMind.communication}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-[1px] bg-[rgba(255,255,255,0.08)]" />
+
+            {/* Section 3: Capabilities & Limitations Column Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#00f0ff] mb-2 flex items-center gap-1.5">
+                  <Zap size={10} /> CAPABILITIES
+                </h4>
+                <ul className="space-y-1.5">
+                  {selectedMind.strengths.map((str, i) => (
+                    <li
+                      key={i}
+                      className="font-sans text-[11px] text-[#d0d5e0] leading-relaxed flex items-start gap-1"
+                    >
+                      <span className="text-[#00f0ff] font-extrabold">•</span> {str}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#ffb800] mb-2 flex items-center gap-1.5">
+                  <Info size={10} /> LIMITATIONS
+                </h4>
+                <ul className="space-y-1.5">
+                  {selectedMind.weaknesses.map((wkn, i) => (
+                    <li
+                      key={i}
+                      className="font-sans text-[11px] text-[#d0d5e0] leading-relaxed flex items-start gap-1"
+                    >
+                      <span className="text-[#ffb800] font-extrabold">•</span> {wkn}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="h-[1px] bg-[rgba(255,255,255,0.08)]" />
+
+            {/* Section 4: Sample Neural Trace Console Terminal */}
+            <div>
+              <h4 className="font-mono text-[10px] font-bold uppercase tracking-widest text-white mb-2">
+                Sample Neural Trace
+              </h4>
+              <div
+                className="p-3.5 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#050508] font-mono text-[11px] min-h-[75px] flex items-center"
+              >
+                {renderTrace(selectedMind.id, selectedMind.thoughtSample)}
+              </div>
+            </div>
+
+            <div className="h-[1px] bg-[rgba(255,255,255,0.08)]" />
+
+            {/* Section 5: Central Node Synthesis (Collapsible Toggle) */}
+            <div>
+              <button
+                onClick={() => setSynthesisExpanded(!synthesisExpanded)}
+                className="flex items-center justify-between w-full font-mono text-[10px] font-bold uppercase tracking-widest text-white hover:text-[#00f0ff] transition-colors"
+              >
+                <span>Central Node Synthesis</span>
+                <span className="text-[#00f0ff] text-[9px]">
+                  {synthesisExpanded ? "COLLAPSE [-]" : "EXPAND [+]"}
+                </span>
+              </button>
+              <AnimatePresence initial={false}>
+                {synthesisExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="font-sans text-[12.5px] text-[#d0d5e0] leading-relaxed font-light mt-3">
+                      This simulated architecture represents our ongoing investigation into non-human cognition models. By establishing a direct link, you authorize our quantum array logic to map incoming context vectors across their respective distributed network lattices.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+          </div>
+
+          {/* Section 6: Sticky Primary CTA (Fixed Bottom) */}
+          <div
+            className="absolute bottom-0 left-0 right-0 p-6 bg-[#0a0a0f] border-t border-[rgba(255,255,255,0.06)] flex flex-col items-center"
+            style={{
+              zIndex: 35,
+              background: "linear-gradient(transparent, #0a0a0f 25%)",
+            }}
+          >
+            <span className="font-mono text-[9px] uppercase tracking-wider text-[#a0a8b8] mb-3">
+              Requires Google Neural Uplink to initialize.
+            </span>
+            <button
+              onClick={() => handleStartSim(selectedId)}
+              className="neon-border-pulse group w-full flex items-center justify-center gap-2 rounded-full py-4 text-xs font-bold uppercase tracking-[0.18em] transition-all duration-300 cursor-pointer shadow-lg bg-[#00f0ff] text-black hover:scale-[1.01]"
+            >
+              Establish Consciousness Link
+              <Play size={12} className="fill-current" />
+            </button>
+          </div>
+
         </section>
 
       </main>
