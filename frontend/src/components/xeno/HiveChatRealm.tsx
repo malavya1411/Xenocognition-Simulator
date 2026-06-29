@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Send, X, Users, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Send, X, Users, AlertTriangle, Activity } from "lucide-react";
 import { simulateHive } from "@/lib/xeno-mock";
 
 interface ChatMessage {
@@ -366,6 +366,8 @@ export function HiveChatRealm({ initialConcept, onClose }: HiveChatRealmProps) {
     if (!inputValue.trim()) return;
     triggerQuery(inputValue.trim());
     setInputValue("");
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#120e05] overflow-hidden select-none">
       {/* Background Crystalline Canvas */}
