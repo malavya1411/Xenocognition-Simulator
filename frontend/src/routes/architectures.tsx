@@ -4,7 +4,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, ArrowRight, Zap, Info, Cpu, Play, ChevronRight } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { FilmGrain, Vignette } from "@/components/xeno/Atmosphere";
-import { PersonaCanvas } from "@/components/xeno/LandingCanvas";
+import { OctopusPanel } from "@/components/xeno/OctopusPanel";
+import { MyceliumPanel } from "@/components/xeno/MyceliumPanel";
+import { HivePanel } from "@/components/xeno/HivePanel";
+import { BoltzmannPanel } from "@/components/xeno/BoltzmannPanel";
+import { MeshPanel } from "@/components/xeno/MeshPanel";
 import {
   BoltzmannIcon,
   HiveIcon,
@@ -139,6 +143,38 @@ function ArchitecturesSelection() {
   // Entering transition overlay state
   const [bootingMind, setBootingMind] = useState<ArchId | null>(null);
   const [bootLogs, setBootLogs] = useState<string[]>([]);
+
+  // Config mapping for panel visualizer scaling
+  const PANEL_HEIGHTS: Record<ArchId, number> = {
+    octopus: 340,
+    mycelium: 320,
+    hive: 200,
+    boltzmann: 220,
+    mesh: 220,
+  };
+
+  const PANEL_WIDTHS: Record<ArchId, number> = {
+    octopus: 360,
+    mycelium: 480,
+    hive: 360,
+    boltzmann: 360,
+    mesh: 360,
+  };
+
+  const renderActiveVisualizer = (id: ArchId) => {
+    switch (id) {
+      case "octopus":
+        return <OctopusPanel data={null} loading={false} />;
+      case "mycelium":
+        return <MyceliumPanel data={null} loading={false} />;
+      case "hive":
+        return <HivePanel data={null} loading={false} />;
+      case "boltzmann":
+        return <BoltzmannPanel data={null} loading={false} />;
+      case "mesh":
+        return <MeshPanel data={null} loading={false} />;
+    }
+  };
 
   // Protect Route
   useEffect(() => {
@@ -414,19 +450,21 @@ function ArchitecturesSelection() {
             }}
           />
 
-          {/* Visualization Stage Ring */}
-          <div className="relative w-[340px] h-[340px] flex items-center justify-center border border-[rgba(255,255,255,0.04)] rounded-full bg-[#030306] shadow-[0_0_80px_rgba(0,240,255,0.02)]">
-            
-            {/* The active mind's canvas topology is stretch-fitted into this relative container */}
-            <div className="relative w-[280px] h-[163px] overflow-hidden flex items-center justify-center">
-              <PersonaCanvas type={selectedMind.id} hovered={true} />
-            </div>
+          {/* Centered stage for the actual panel visualizer */}
+          <div 
+            className="relative overflow-hidden flex items-center justify-center border border-[rgba(255,255,255,0.04)] rounded-xl bg-[#06060c] shadow-[0_0_80px_rgba(0,240,255,0.02)] transition-all duration-300"
+            style={{ 
+              width: PANEL_WIDTHS[selectedMind.id], 
+              height: PANEL_HEIGHTS[selectedMind.id] 
+            }}
+          >
+            {renderActiveVisualizer(selectedMind.id)}
 
             {/* Inner radar details */}
-            <div className="absolute top-4 left-4 font-mono text-[8px] text-text-ghost">
+            <div className="absolute top-4 left-4 font-mono text-[8px] text-text-ghost z-20 pointer-events-none">
               GRID: {selectedMind.id.toUpperCase()}_STAGE
             </div>
-            <div className="absolute bottom-4 right-4 font-mono text-[8px] text-[#00f0ff] animate-pulse">
+            <div className="absolute bottom-4 right-4 font-mono text-[8px] text-[#00f0ff] animate-pulse z-20 pointer-events-none">
               NEURAL FLOW ACTIVE
             </div>
           </div>
