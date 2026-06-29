@@ -25,7 +25,7 @@ function getCubicBezierPoint(
   };
 }
 
-export function OctopusPanel({ data, loading }: { data: OctopusData | null; loading: boolean }) {
+export function OctopusPanel({ data, loading, previewMode = false }: { data: OctopusData | null; loading: boolean; previewMode?: boolean }) {
   const [active, setActive] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -326,7 +326,7 @@ export function OctopusPanel({ data, loading }: { data: OctopusData | null; load
       {/* Immersive Canvas-based Giant Floating Octopus Screen */}
       <div 
         className="relative mx-auto overflow-hidden" 
-        style={{ width: W, height: H, maxWidth: "100%", background: "#06060c", border: "1.2px solid var(--border-dim)", borderRadius: 10 }}
+        style={previewMode ? { width: W, height: H, maxWidth: "100%" } : { width: W, height: H, maxWidth: "100%", background: "#06060c", border: "1.2px solid var(--border-dim)", borderRadius: 10 }}
       >
         {data && !loading ? (
           <canvas ref={canvasRef} className="block w-full h-full" />
@@ -422,81 +422,82 @@ export function OctopusPanel({ data, loading }: { data: OctopusData | null; load
         )}
       </div>
 
-      {/* Consensus / Detail Text box */}
-      <div
-        className="mt-4 p-4 min-h-[125px] flex flex-col justify-center transition-all duration-500"
-        style={{
-          background: "var(--surface)",
-          border: `1px solid ${active !== null ? "var(--accent-octopus)33" : "var(--border-dim)"}`,
-          borderRadius: 8,
-          boxShadow: active !== null ? "0 0 15px -3px rgba(0, 240, 255, 0.05)" : "none"
-        }}
-      >
-        <AnimatePresence mode="wait">
-          {active === null && (
-            <motion.p
-              key="guide"
-              initial={{ opacity: 0, y: 3 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -3 }}
-              className="font-mono text-[11px] leading-relaxed text-text-secondary text-center"
-            >
-              [ click the central mantle slit-eye for consensus • click dynamic tentacle tips for independent sensors ]
-            </motion.p>
-          )}
-          {active === -1 && data && (
-            <motion.div
-              key="consensus"
-              initial={{ opacity: 0, y: 3 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -3 }}
-              className="space-y-2"
-            >
-              <div className="flex justify-between items-center border-b border-white/5 pb-1">
-                <span className="font-mono text-[9.5px] uppercase tracking-widest text-text-ghost">
-                  central body • integration node
-                </span>
-                <span 
-                  className="font-mono text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded"
-                  style={{ color: "var(--accent-octopus)", background: "rgba(0, 240, 255, 0.06)" }}
-                >
-                  confidence: {(confidence * 100).toFixed(0)}%
-                </span>
-              </div>
-              <p className="font-serif text-base italic text-text-primary leading-relaxed">
-                "{data.centralNode.response}"
-              </p>
-              <p className="font-mono text-[10.5px] text-text-secondary border-t border-dashed border-white/5 pt-1.5 mt-2 opacity-85">
-                <span className="text-text-ghost">consensus:</span> {data.consensus}
-              </p>
-            </motion.div>
-          )}
-          {active !== null && active >= 0 && data && (
-            <motion.div
-              key={`arm-${active}`}
-              initial={{ opacity: 0, y: 3 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -3 }}
-              className="space-y-2"
-            >
-              <div className="flex justify-between items-center border-b border-white/5 pb-1">
-                <span className="font-mono text-[9.5px] uppercase tracking-widest text-text-ghost">
-                  peripheral lobe {active + 1}
-                </span>
-                <span 
-                  className="font-mono text-[9.5px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded"
-                  style={{ color: "var(--accent-octopus-pink)", background: "rgba(236, 72, 153, 0.06)" }}
-                >
-                  bias: {data.armNodes[active].bias}
-                </span>
-              </div>
-              <p className="font-mono text-[12.5px] text-text-primary leading-relaxed">
-                {data.armNodes[active].response}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      {!previewMode && (
+        <div
+          className="mt-4 p-4 min-h-[125px] flex flex-col justify-center transition-all duration-500"
+          style={{
+            background: "var(--surface)",
+            border: `1px solid ${active !== null ? "var(--accent-octopus)33" : "var(--border-dim)"}`,
+            borderRadius: 8,
+            boxShadow: active !== null ? "0 0 15px -3px rgba(0, 240, 255, 0.05)" : "none"
+          }}
+        >
+          <AnimatePresence mode="wait">
+            {active === null && (
+              <motion.p
+                key="guide"
+                initial={{ opacity: 0, y: 3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -3 }}
+                className="font-mono text-[11px] leading-relaxed text-text-secondary text-center"
+              >
+                [ click the central mantle slit-eye for consensus • click dynamic tentacle tips for independent sensors ]
+              </motion.p>
+            )}
+            {active === -1 && data && (
+              <motion.div
+                key="consensus"
+                initial={{ opacity: 0, y: 3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -3 }}
+                className="space-y-2"
+              >
+                <div className="flex justify-between items-center border-b border-white/5 pb-1">
+                  <span className="font-mono text-[9.5px] uppercase tracking-widest text-text-ghost">
+                    central body • integration node
+                  </span>
+                  <span 
+                    className="font-mono text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded"
+                    style={{ color: "var(--accent-octopus)", background: "rgba(0, 240, 255, 0.06)" }}
+                  >
+                    confidence: {(confidence * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <p className="font-serif text-base italic text-text-primary leading-relaxed">
+                  "{data.centralNode.response}"
+                </p>
+                <p className="font-mono text-[10.5px] text-text-secondary border-t border-dashed border-white/5 pt-1.5 mt-2 opacity-85">
+                  <span className="text-text-ghost">consensus:</span> {data.consensus}
+                </p>
+              </motion.div>
+            )}
+            {active !== null && active >= 0 && data && (
+              <motion.div
+                key={`arm-${active}`}
+                initial={{ opacity: 0, y: 3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -3 }}
+                className="space-y-2"
+              >
+                <div className="flex justify-between items-center border-b border-white/5 pb-1">
+                  <span className="font-mono text-[9.5px] uppercase tracking-widest text-text-ghost">
+                    peripheral lobe {active + 1}
+                  </span>
+                  <span 
+                    className="font-mono text-[9.5px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded"
+                    style={{ color: "var(--accent-octopus-pink)", background: "rgba(236, 72, 153, 0.06)" }}
+                  >
+                    bias: {data.armNodes[active].bias}
+                  </span>
+                </div>
+                <p className="font-mono text-[12.5px] text-text-primary leading-relaxed">
+                  {data.armNodes[active].response}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }

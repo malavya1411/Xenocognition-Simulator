@@ -14,9 +14,11 @@ interface SwarmAgent {
 export function HivePanel({
   data,
   loading,
+  previewMode = false,
 }: {
   data: HiveData | null;
   loading: boolean;
+  previewMode?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const agentsRef = useRef<SwarmAgent[]>([]);
@@ -200,23 +202,17 @@ export function HivePanel({
         // Draw agent particle
         ctx.fillStyle = data ? agent.color : "#fbbf24";
         ctx.beginPath();
-        // Slightly larger for active hovered cluster particles
-        const size =
-          data && clusterCenters[agent.clusterIdx]?.name === hoveredCluster
-            ? 2
-            : 1.25;
-        ctx.arc(agent.x, agent.y, size, 0, Math.PI * 2);
+        ctx.arc(agent.x, agent.y, 1.3, 0, Math.PI * 2);
         ctx.fill();
+      });
 
-        // Bioluminescent filament connections inside same clusters
-        if (data && !loading) {
-          agents.forEach((other) => {
-            if (agent === other || agent.clusterIdx !== other.clusterIdx)
-              return;
-            const odx = other.x - agent.x;
-            const ody = other.y - agent.y;
-            const odist = Math.hypot(odx, ody);
-            if (odist < 14) {
+      // Draw local web links among nearby agents of the same cluster
+      agents.forEach((agent, idx) => {
+        if (idx % 6 === 0) {
+          agents.forEach((other, oidx) => {
+            if (idx === oidx || agent.clusterIdx !== other.clusterIdx) return;
+            const dist = Math.hypot(other.x - agent.x, other.y - agent.y);
+            if (dist < 14) {
               ctx.strokeStyle = `${agent.color}15`;
               ctx.lineWidth = 0.45;
               ctx.beginPath();
@@ -233,7 +229,7 @@ export function HivePanel({
 
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [data, loading, clusterCenters, hoveredCluster]);
+  }, [data, clusterCenters, hoveredCluster]);
 
   const top = data?.votes[0];
 
@@ -242,7 +238,7 @@ export function HivePanel({
       {/* Living Swarm Canvas Viewport */}
       <div
         className="relative overflow-hidden flex justify-center items-center"
-        style={{
+        style={previewMode ? { minHeight: H } : {
           background: "#08080f",
           border: "1.2px solid var(--border-dim)",
           borderRadius: 10,
@@ -252,12 +248,14 @@ export function HivePanel({
         <canvas ref={canvasRef} className="block" />
 
         {/* Swarm State overlay indicators */}
-        <div className="absolute top-2 left-2 flex gap-1.5 pointer-events-none">
-          <span className="h-[5px] w-[5px] rounded-full bg-amber-500 animate-ping" />
-          <span className="font-mono text-[8px] uppercase tracking-widest text-text-ghost">
-            {loading ? "converging" : "consensus: active"}
-          </span>
-        </div>
+        {!previewMode && (
+          <div className="absolute top-2 left-2 flex gap-1.5 pointer-events-none">
+            <span className="h-[5px] w-[5px] rounded-full bg-amber-500 animate-ping" />
+            <span className="font-mono text-[8px] uppercase tracking-widest text-text-ghost">
+              {loading ? "converging" : "consensus: active"}
+            </span>
+          </div>
+        )}
 
         {/* Interactive Mouse Hover Hotspots for Clusters */}
         {data && !loading && (
@@ -284,7 +282,7 @@ export function HivePanel({
         )}
       </div>
 
-      {data && !loading && top && (
+      {!previewMode && data && !loading && top && (
         <div className="mt-4 flex flex-col space-y-3">
           {/* Swarm consensus text */}
           <div className="text-center">
