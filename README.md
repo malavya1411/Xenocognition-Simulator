@@ -71,7 +71,6 @@ Xenocognition-Simulator/
 - **Framework**: [TanStack Start](https://tanstack.com/router/v1/docs/start/overview) (React SSR)
 - **Styling**: Vanilla CSS with Tailwind CSS configurations
 - **Animations**: Framer Motion
-- **Vite Plugins**: `@lovable.dev/vite-tanstack-config` (encapsulating dev-server bridge, HMR, and build pipelines)
 - **Icons**: Lucide React
 
 ---
